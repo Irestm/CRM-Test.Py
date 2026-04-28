@@ -9,7 +9,20 @@
         tailwind.config = { darkMode: 'class' }
     </script>
     <style>
-        .light body { background-color: #ffffff !important; color: #000000 !important; }
+        :root {
+            --bg-color: #f0f2f5;
+            --text-color: #1a1a1a;
+        }
+
+        .dark {
+            --bg-color: #1a1a1a;
+            --text-color: #f5f5f5;
+        }
+
+        body {
+            background-color: var(--bg-color) !important;
+            color: var(--text-color) !important;
+        }
 
         .status-new { border-top: 6px solid #3b82f6; }
         .status-active { border-top: 6px solid #eab308; }
@@ -25,10 +38,11 @@
         .dark ::-webkit-scrollbar-thumb { background: #4b5563; }
     </style>
 </head>
-<body class="bg-white dark:bg-gray-900 text-black dark:text-gray-100 font-sans min-h-screen flex flex-col transition-colors duration-200 overflow-x-hidden">
+<body class="font-sans min-h-screen flex flex-col transition-colors duration-200 overflow-x-hidden">
 
     <div id="toast-container" class="fixed top-4 right-4 z-[100] flex flex-col gap-2 pointer-events-none"></div>
     <div id="overlay" class="fixed inset-0 bg-black/40 hidden z-40 backdrop-blur-sm transition-opacity" onclick="closeSheet()"></div>
+    <div id="products-overlay" class="fixed inset-0 bg-black/40 hidden z-50 backdrop-blur-sm transition-opacity" onclick="toggleProductsPanel()"></div>
 
     <header class="flex justify-between items-center p-4 bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-30 transition-colors">
         <div class="flex items-center gap-3 cursor-pointer" onclick="location.reload()">
@@ -39,22 +53,29 @@
         </div>
 
         <div id="topTabs" class="hidden md:flex gap-8">
-            <button onclick="setFilter(null, this)" class="tab-active text-xs uppercase tracking-widest py-1">All</button>
-            <button onclick="setFilter('new', this)" class="text-xs text-gray-400 uppercase tracking-widest py-1 hover:text-black dark:hover:text-white transition-colors">New</button>
-            <button onclick="setFilter('active', this)" class="text-xs text-gray-400 uppercase tracking-widest py-1 hover:text-black dark:hover:text-white transition-colors">Active</button>
-            <button onclick="setFilter('processing', this)" class="text-xs text-gray-400 uppercase tracking-widest py-1 hover:text-black dark:hover:text-white transition-colors">Processing</button>
-            <button onclick="setFilter('completed', this)" class="text-xs text-gray-400 uppercase tracking-widest py-1 hover:text-black dark:hover:text-white transition-colors">Completed</button>
+            <button onclick="setFilter(null, this)" class="tab-active text-xs uppercase tracking-widest py-1" data-i18n="tab_all">All</button>
+            <button onclick="setFilter('new', this)" class="text-xs text-gray-400 uppercase tracking-widest py-1 hover:text-black dark:hover:text-white transition-colors" data-i18n="status_new">New</button>
+            <button onclick="setFilter('active', this)" class="text-xs text-gray-400 uppercase tracking-widest py-1 hover:text-black dark:hover:text-white transition-colors" data-i18n="status_active">Active</button>
+            <button onclick="setFilter('processing', this)" class="text-xs text-gray-400 uppercase tracking-widest py-1 hover:text-black dark:hover:text-white transition-colors" data-i18n="status_processing">Processing</button>
+            <button onclick="setFilter('completed', this)" class="text-xs text-gray-400 uppercase tracking-widest py-1 hover:text-black dark:hover:text-white transition-colors" data-i18n="status_completed">Completed</button>
         </div>
 
         <div class="flex items-center gap-2">
-            <button onclick="toggleTrashModal()" class="p-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors relative" title="Trash">
+            <div class="flex items-center gap-1 bg-gray-100 dark:bg-gray-900 p-1 rounded-xl">
+                <button onclick="setLanguage('en')" id="lang-en" class="px-3 py-1.5 text-xs font-black rounded-lg">EN</button>
+                <button onclick="setLanguage('ua')" id="lang-ua" class="px-3 py-1.5 text-xs font-black rounded-lg">UA</button>
+            </div>
+            <button onclick="toggleProductsPanel()" class="p-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" title="Products Catalog">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path></svg>
+            </button>
+            <button onclick="toggleTrashModal()" class="p-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors relative" data-i18n-title="trash_title" title="Trash">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
             </button>
             <button onclick="toggleTheme()" class="p-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                 <svg class="w-5 h-5 block dark:hidden" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path></svg>
                 <svg class="w-5 h-5 hidden dark:block text-yellow-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd"></path></svg>
             </button>
-            <button id="logoutBtn" onclick="logout()" class="p-2.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl hidden transition-colors" title="Logout">
+            <button id="logoutBtn" onclick="logout()" class="p-2.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl hidden transition-colors" data-i18n-title="logout_title" title="Logout">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
             </button>
         </div>
@@ -62,9 +83,6 @@
 
     <main class="flex-1 p-6 md:p-10 lg:px-16 overflow-y-auto">
         <div id="welcomeState" class="absolute inset-0 flex flex-col items-center justify-center text-gray-400 -z-10 hidden">
-            <svg class="w-24 h-24 mb-6 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
-            <p class="text-2xl font-bold text-black dark:text-white mb-2">No active tasks</p>
-            <p class="text-sm">Click the + button to create a new record.</p>
         </div>
 
         <div id="tasks-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
@@ -75,7 +93,7 @@
         </button>
     </main>
 
-    <div id="bottom-sheet" class="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 rounded-t-[2.5rem] shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.3)] transform translate-y-full sheet-transition z-50 h-[85vh] md:h-[80vh] lg:w-[800px] lg:mx-auto lg:rounded-[2.5rem] lg:bottom-4 lg:border dark:border-gray-700 flex flex-col hidden">
+    <div id="bottom-sheet" class="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 rounded-t-[2.5rem] shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.3)] transform translate-y-full sheet-transition z-40 h-[85vh] md:h-[80vh] lg:w-[800px] lg:mx-auto lg:rounded-[2.5rem] lg:bottom-4 lg:border dark:border-gray-700 flex flex-col hidden">
         <div class="w-16 h-1.5 bg-gray-200 dark:bg-gray-600 rounded-full mx-auto mt-4 mb-2 cursor-pointer hover:bg-gray-300 transition-colors" onclick="closeSheet()"></div>
         <div id="sheet-body" class="flex-1 overflow-y-auto px-6 sm:px-10 pb-10">
         </div>
@@ -88,20 +106,20 @@
                     <svg class="w-8 h-8 text-white dark:text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
                 </div>
             </div>
-            <h2 class="text-2xl font-black mb-8 text-center uppercase tracking-tighter">Login to TECSA</h2>
+            <h2 class="text-2xl font-black mb-8 text-center uppercase tracking-tighter" data-i18n="login_title">Login to TECSA</h2>
             <div class="space-y-5">
                 <div>
-                    <input type="email" id="email" placeholder="Work Email" class="w-full bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-black dark:focus:ring-white transition-all font-medium">
+                    <input type="email" id="email" data-i18n-placeholder="email_placeholder" placeholder="Work Email" class="w-full bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-black dark:focus:ring-white transition-all font-medium">
                     <p id="emailError" class="text-red-500 text-xs mt-2 font-bold hidden px-2"></p>
                 </div>
                 <div>
-                    <input type="password" id="password" placeholder="Password" class="w-full bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-black dark:focus:ring-white transition-all font-medium">
+                    <input type="password" id="password" data-i18n-placeholder="password_placeholder" placeholder="Password" class="w-full bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-black dark:focus:ring-white transition-all font-medium">
                     <p id="passwordError" class="text-red-500 text-xs mt-2 font-bold hidden px-2"></p>
                 </div>
                 <div id="generalAuthError" class="text-red-500 text-sm font-bold text-center hidden"></div>
                 <div class="pt-4 space-y-3">
-                    <button onclick="login()" class="w-full bg-black dark:bg-white text-white dark:text-black p-4 rounded-2xl font-bold hover:scale-[1.02] transition-transform">SIGN IN</button>
-                    <button onclick="register()" class="w-full bg-white dark:bg-gray-800 border-2 border-black dark:border-white text-black dark:text-white p-4 rounded-2xl font-bold hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">CREATE ACCOUNT</button>
+                    <button onclick="login()" class="w-full bg-black dark:bg-white text-white dark:text-black p-4 rounded-2xl font-bold hover:scale-[1.02] transition-transform" data-i18n="signin_btn">SIGN IN</button>
+                    <button onclick="register()" class="w-full bg-white dark:bg-gray-800 border-2 border-black dark:border-white text-black dark:text-white p-4 rounded-2xl font-bold hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors" data-i18n="create_account_btn">CREATE ACCOUNT</button>
                 </div>
             </div>
         </div>
@@ -110,7 +128,7 @@
     <div id="trashModal" class="fixed inset-0 bg-black/60 z-[90] flex items-center justify-center hidden backdrop-blur-sm">
         <div class="bg-white dark:bg-gray-800 p-8 rounded-3xl shadow-2xl w-full max-w-2xl mx-4 max-h-[85vh] flex flex-col">
             <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-black uppercase tracking-tighter flex items-center gap-3">
+                <h2 class="text-2xl font-black uppercase tracking-tighter flex items-center gap-3" data-i18n="trash_title">
                     <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                     Trash
                 </h2>
@@ -118,15 +136,22 @@
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
             </div>
-
-            <div id="trashList" class="flex-1 overflow-y-auto space-y-3 pr-2">
-            </div>
-
+            <div id="trashList" class="flex-1 overflow-y-auto space-y-3 pr-2"></div>
             <div class="mt-6 pt-6 border-t border-gray-100 dark:border-gray-700 flex justify-between items-center">
                 <span id="trashCount" class="text-sm font-bold text-gray-400">0 items</span>
-                <button onclick="emptyTrash()" id="emptyTrashBtn" class="text-sm font-bold text-red-500 hover:text-red-600 uppercase tracking-widest hidden transition-colors">Empty Trash</button>
+                <button onclick="emptyTrash()" id="emptyTrashBtn" class="text-sm font-bold text-red-500 hover:text-red-600 uppercase tracking-widest hidden transition-colors" data-i18n="empty_trash_btn">Empty Trash</button>
             </div>
         </div>
+    </div>
+
+    <div id="products-panel" class="fixed top-0 right-0 bottom-0 bg-white dark:bg-gray-800 w-full max-w-md transform translate-x-full transition-transform duration-300 ease-in-out z-[60] shadow-2xl flex flex-col">
+        <div class="flex justify-between items-center p-6 border-b border-gray-100 dark:border-gray-700">
+            <h2 class="text-2xl font-black uppercase tracking-tighter" data-i18n="products_catalog_title">Products Catalog</h2>
+            <button onclick="toggleProductsPanel()" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+        <div id="products-list" class="flex-1 overflow-y-auto p-6 space-y-4"></div>
     </div>
 
     <script>
@@ -135,6 +160,174 @@
         let currentTasks = [];
         let currentFilter = null;
         let selectedTaskId = null;
+
+        const translations = {
+            en: {
+                tab_all: 'All',
+                status_new: 'New',
+                status_active: 'Active',
+                status_processing: 'Processing',
+                status_completed: 'Completed',
+                trash_title: 'Trash',
+                logout_title: 'Logout',
+                login_title: 'Login to TECSA',
+                email_placeholder: 'Work Email',
+                password_placeholder: 'Password',
+                signin_btn: 'SIGN IN',
+                create_account_btn: 'CREATE ACCOUNT',
+                empty_trash_btn: 'Empty Trash',
+                products_catalog_title: 'Products Catalog',
+                new_record_title: 'New Record',
+                title_label: 'Title *',
+                type_label: 'Type',
+                amount_label: 'Amount ($)',
+                company_label: 'Company (Optional)',
+                description_label: 'Description',
+                create_btn: 'CREATE',
+                cancel_btn: 'CANCEL',
+                type_sale: 'Sale',
+                type_service: 'Service',
+                status_label: 'Status',
+                description_heading: 'Description',
+                last_comment_heading: 'Last Comment',
+                attachments_heading: 'Attachments',
+                document_attached: 'Document Attached',
+                move_to_work_btn: 'Move to Work',
+                processing_btn: 'Processing',
+                mark_done_btn: 'Mark Done',
+                move_to_trash_btn: 'Move to Trash',
+                restore_btn: 'Restore',
+                welcome_empty_title: 'Workspace is empty',
+                welcome_empty_subtitle: 'Click the + button to create a new record.',
+                welcome_no_tasks_title: 'No active tasks',
+                welcome_no_tasks_subtitle: 'Click the + button to create a new record.',
+                rollback_btn_title: 'Rollback Status',
+                attach_doc_title: 'Attach Document',
+                add_comment_placeholder: 'Add comment (optional)...',
+                contact_person_heading: 'Contact Person',
+                audit_log_heading: 'History of Changes',
+                add_document_btn: 'Add Document',
+                generate_pdf_btn: 'Generate PDF (KP)',
+                file_uploaded_at: 'Uploaded at',
+                file_download: 'Download',
+            },
+            ua: {
+                tab_all: 'Всі',
+                status_new: 'Нові',
+                status_active: 'Активні',
+                status_processing: 'В роботі',
+                status_completed: 'Завершені',
+                trash_title: 'Кошик',
+                logout_title: 'Вийти',
+                login_title: 'Вхід в TECSA',
+                email_placeholder: 'Робоча пошта',
+                password_placeholder: 'Пароль',
+                signin_btn: 'УВІЙТИ',
+                create_account_btn: 'СТВОРИТИ АКАУНТ',
+                empty_trash_btn: 'Очистити кошик',
+                products_catalog_title: 'Каталог товарів',
+                new_record_title: 'Новий запис',
+                title_label: 'Назва *',
+                type_label: 'Тип',
+                amount_label: 'Сума ($)',
+                company_label: 'Компанія (опціонально)',
+                description_label: 'Опис',
+                create_btn: 'СТВОРИТИ',
+                cancel_btn: 'СКАСУВАТИ',
+                type_sale: 'Продаж',
+                type_service: 'Послуга',
+                status_label: 'Статус',
+                description_heading: 'Опис',
+                last_comment_heading: 'Останній коментар',
+                attachments_heading: 'Вкладення',
+                document_attached: 'Документ прикріплено',
+                move_to_work_btn: 'Взяти в роботу',
+                processing_btn: 'Обробка',
+                mark_done_btn: 'Позначити як виконане',
+                move_to_trash_btn: 'Перемістити до кошика',
+                restore_btn: 'Відновити',
+                welcome_empty_title: 'Робочий простір порожній',
+                welcome_empty_subtitle: 'Натисніть кнопку +, щоб створити новий запис.',
+                welcome_no_tasks_title: 'Активних завдань немає',
+                welcome_no_tasks_subtitle: 'Натисніть кнопку +, щоб створити новий запис.',
+                rollback_btn_title: 'Повернути статус',
+                attach_doc_title: 'Прикріпити документ',
+                add_comment_placeholder: 'Додати коментар (опціонально)...',
+                contact_person_heading: 'Контактна особа',
+                audit_log_heading: 'Історія змін',
+                add_document_btn: 'Додати документ',
+                generate_pdf_btn: 'Згенерувати PDF (КП)',
+                file_uploaded_at: 'Завантажено',
+                file_download: 'Завантажити',
+            }
+        };
+
+        const mockProducts = [
+            { name: 'Spectrophotometer SF-56', price: 4500, sku: 'TEC-SPEC-001' },
+            { name: 'Magnetic Stirrer MS-3000', price: 750, sku: 'TEC-STIR-002' },
+            { name: 'Digital Microscope DM-X4', price: 1200, sku: 'TEC-MICR-003' },
+            { name: 'Laboratory Centrifuge LC-8', price: 2100, sku: 'TEC-CENT-004' }
+        ];
+
+        function setLanguage(lang) {
+            localStorage.setItem('language', lang);
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                el.textContent = translations[lang][key] || el.textContent;
+            });
+            document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+                const key = el.getAttribute('data-i18n-placeholder');
+                el.placeholder = translations[lang][key] || el.placeholder;
+            });
+            document.querySelectorAll('[data-i18n-title]').forEach(el => {
+                const key = el.getAttribute('data-i18n-title');
+                el.title = translations[lang][key] || el.title;
+            });
+
+            const enBtn = document.getElementById('lang-en');
+            const uaBtn = document.getElementById('lang-ua');
+            if (lang === 'ua') {
+                uaBtn.classList.add('bg-white', 'dark:bg-gray-700', 'shadow');
+                enBtn.classList.remove('bg-white', 'dark:bg-gray-700', 'shadow');
+            } else {
+                enBtn.classList.add('bg-white', 'dark:bg-gray-700', 'shadow');
+                uaBtn.classList.remove('bg-white', 'dark:bg-gray-700', 'shadow');
+            }
+            loadTasks();
+        }
+
+        function toggleProductsPanel() {
+            const panel = document.getElementById('products-panel');
+            const overlay = document.getElementById('products-overlay');
+            const isOpen = !panel.classList.contains('translate-x-full');
+
+            if (isOpen) {
+                panel.classList.add('translate-x-full');
+                overlay.classList.add('hidden');
+            } else {
+                renderProducts();
+                panel.classList.remove('translate-x-full');
+                overlay.classList.remove('hidden');
+            }
+        }
+
+        function renderProducts() {
+            const list = document.getElementById('products-list');
+            list.innerHTML = '';
+            const lang = localStorage.getItem('language') || 'en';
+            mockProducts.forEach(p => {
+                const el = document.createElement('div');
+                el.className = 'bg-gray-50 dark:bg-gray-900/50 p-4 rounded-2xl border border-gray-100 dark:border-gray-700';
+                el.innerHTML = `
+                    <div class="flex justify-between items-center">
+                        <div class="font-bold">${p.name}</div>
+                        <div class="font-black text-green-600 dark:text-green-400">${p.price.toLocaleString(lang === 'ua' ? 'uk-UA' : 'en-US', {style:'currency', currency:'USD'})}</div>
+                    </div>
+                    <div class="text-xs text-gray-400 font-bold uppercase mt-1">SKU: ${p.sku}</div>
+                `;
+                list.appendChild(el);
+            });
+        }
 
         if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
             document.documentElement.classList.add('dark');
@@ -190,7 +383,7 @@
         }
 
         async function fetchWrapper(endpoint, options = {}) {
-            const headers = { ...options.headers };
+            const headers = { ...options.headers, 'Accept-Language': localStorage.getItem('language') || 'en' };
             if (token) headers['Authorization'] = `Bearer ${token}`;
 
             try {
@@ -301,13 +494,14 @@
             const grid = document.getElementById('tasks-grid');
             const welcome = document.getElementById('welcomeState');
             grid.innerHTML = '';
+            const lang = localStorage.getItem('language') || 'en';
 
             if (currentTasks.length === 0) {
                 welcome.classList.remove('hidden');
                 if(currentFilter) {
-                    welcome.innerHTML = `<p class="text-xl font-bold text-gray-500">No tasks in ${currentFilter.toUpperCase()}</p>`;
+                    welcome.innerHTML = `<p class="text-xl font-bold text-gray-500">${translations[lang].no_tasks_in || 'No tasks in'} ${translations[lang][`status_${currentFilter}`].toUpperCase()}</p>`;
                 } else {
-                    welcome.innerHTML = `<svg class="w-24 h-24 mb-6 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg><p class="text-2xl font-bold text-black dark:text-white mb-2">Workspace is empty</p><p class="text-sm font-medium">Click the + button to create a new record.</p>`;
+                    welcome.innerHTML = `<svg class="w-24 h-24 mb-6 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg><p class="text-2xl font-bold text-black dark:text-white mb-2" data-i18n="welcome_empty_title">${translations[lang].welcome_empty_title}</p><p class="text-sm font-medium" data-i18n="welcome_empty_subtitle">${translations[lang].welcome_empty_subtitle}</p>`;
                 }
                 return;
             }
@@ -315,7 +509,7 @@
             welcome.classList.add('hidden');
 
             currentTasks.forEach(task => {
-                const typeLabel = task.task_type === 'service' ? 'Service' : 'Sale';
+                const typeLabel = task.task_type === 'service' ? translations[lang].type_service : translations[lang].type_sale;
                 const typeColor = task.task_type === 'service' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300';
 
                 const card = document.createElement('div');
@@ -325,15 +519,15 @@
                 card.innerHTML = `
                     <div class="flex justify-between items-start mb-4">
                         <span class="text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full ${typeColor}">${typeLabel}</span>
-                        ${task.file_path ? `<svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>` : ''}
+                        ${task.files && task.files.length > 0 ? `<svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>` : ''}
                     </div>
                     <div class="mb-auto">
                         <h3 class="text-xl font-black mb-1 leading-snug line-clamp-2">${task.title}</h3>
                         ${task.company_name ? `<p class="text-xs font-bold text-gray-400 uppercase tracking-tight line-clamp-1 mb-2">${task.company_name}</p>` : ''}
                     </div>
                     <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700/50 flex justify-between items-end">
-                        <div class="text-xs font-bold text-gray-400 uppercase tracking-widest">${task.status}</div>
-                        ${task.amount ? `<div class="font-black text-lg text-green-600 dark:text-green-400">${task.amount.toLocaleString('en-US', {style:'currency', currency:'USD'}).replace('.00','')}</div>` : '<div></div>'}
+                        <div class="text-xs font-bold text-gray-400 uppercase tracking-widest">${translations[lang][`status_${task.status}`]}</div>
+                        ${task.amount ? `<div class="font-black text-lg text-green-600 dark:text-green-400">${task.amount.toLocaleString(lang === 'ua' ? 'uk-UA' : 'en-US', {style:'currency', currency:'USD'}).replace('.00','')}</div>` : '<div></div>'}
                     </div>
                 `;
                 grid.appendChild(card);
@@ -345,47 +539,43 @@
             const sheet = document.getElementById('bottom-sheet');
             const overlay = document.getElementById('overlay');
             const body = document.getElementById('sheet-body');
+            const lang = localStorage.getItem('language') || 'en';
 
             sheet.classList.remove('hidden');
             overlay.classList.remove('hidden');
 
             body.innerHTML = `
                 <div class="max-w-2xl mx-auto pt-4">
-                    <h2 class="text-3xl font-black mb-8 uppercase tracking-tighter">New Record</h2>
-
+                    <h2 class="text-3xl font-black mb-8 uppercase tracking-tighter" data-i18n="new_record_title">${translations[lang].new_record_title}</h2>
                     <div class="space-y-5">
                         <div>
-                            <label class="text-xs font-bold text-gray-400 uppercase tracking-widest ml-2 block mb-1">Title *</label>
+                            <label class="text-xs font-bold text-gray-400 uppercase tracking-widest ml-2 block mb-1" data-i18n="title_label">${translations[lang].title_label}</label>
                             <input type="text" id="nt-title" class="w-full bg-gray-50 dark:bg-gray-900 border-none p-4 rounded-2xl outline-none focus:ring-2 focus:ring-black dark:focus:ring-white transition-all font-medium text-lg">
                         </div>
-
                         <div class="grid grid-cols-2 gap-4">
                             <div>
-                                <label class="text-xs font-bold text-gray-400 uppercase tracking-widest ml-2 block mb-1">Type</label>
+                                <label class="text-xs font-bold text-gray-400 uppercase tracking-widest ml-2 block mb-1" data-i18n="type_label">${translations[lang].type_label}</label>
                                 <select id="nt-type" class="w-full bg-gray-50 dark:bg-gray-900 border-none p-4 rounded-2xl outline-none focus:ring-2 focus:ring-black dark:focus:ring-white transition-all font-bold appearance-none">
-                                    <option value="sale">Sale</option>
-                                    <option value="service">Service</option>
+                                    <option value="sale">${translations[lang].type_sale}</option>
+                                    <option value="service">${translations[lang].type_service}</option>
                                 </select>
                             </div>
                             <div>
-                                <label class="text-xs font-bold text-gray-400 uppercase tracking-widest ml-2 block mb-1">Amount ($)</label>
+                                <label class="text-xs font-bold text-gray-400 uppercase tracking-widest ml-2 block mb-1" data-i18n="amount_label">${translations[lang].amount_label}</label>
                                 <input type="number" id="nt-amount" step="0.01" class="w-full bg-gray-50 dark:bg-gray-900 border-none p-4 rounded-2xl outline-none focus:ring-2 focus:ring-black dark:focus:ring-white transition-all font-bold">
                             </div>
                         </div>
-
                         <div>
-                            <label class="text-xs font-bold text-gray-400 uppercase tracking-widest ml-2 block mb-1">Company (Optional)</label>
+                            <label class="text-xs font-bold text-gray-400 uppercase tracking-widest ml-2 block mb-1" data-i18n="company_label">${translations[lang].company_label}</label>
                             <input type="text" id="nt-company" class="w-full bg-gray-50 dark:bg-gray-900 border-none p-4 rounded-2xl outline-none focus:ring-2 focus:ring-black dark:focus:ring-white transition-all font-medium">
                         </div>
-
                         <div>
-                            <label class="text-xs font-bold text-gray-400 uppercase tracking-widest ml-2 block mb-1">Description</label>
+                            <label class="text-xs font-bold text-gray-400 uppercase tracking-widest ml-2 block mb-1" data-i18n="description_label">${translations[lang].description_label}</label>
                             <textarea id="nt-desc" class="w-full bg-gray-50 dark:bg-gray-900 border-none p-4 rounded-2xl outline-none focus:ring-2 focus:ring-black dark:focus:ring-white transition-all font-medium h-32 resize-none"></textarea>
                         </div>
-
                         <div class="pt-4 flex gap-3">
-                            <button onclick="submitNewTask()" class="flex-1 bg-black dark:bg-white text-white dark:text-black py-4 rounded-2xl font-bold hover:scale-[1.02] transition-transform">CREATE</button>
-                            <button onclick="closeSheet()" class="px-8 bg-gray-100 dark:bg-gray-700 text-black dark:text-white py-4 rounded-2xl font-bold hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">CANCEL</button>
+                            <button onclick="submitNewTask()" class="flex-1 bg-black dark:bg-white text-white dark:text-black py-4 rounded-2xl font-bold hover:scale-[1.02] transition-transform" data-i18n="create_btn">${translations[lang].create_btn}</button>
+                            <button onclick="closeSheet()" class="px-8 bg-gray-100 dark:bg-gray-700 text-black dark:text-white py-4 rounded-2xl font-bold hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors" data-i18n="cancel_btn">${translations[lang].cancel_btn}</button>
                         </div>
                     </div>
                 </div>
@@ -429,30 +619,86 @@
             const sheet = document.getElementById('bottom-sheet');
             const overlay = document.getElementById('overlay');
             const body = document.getElementById('sheet-body');
+            const lang = localStorage.getItem('language') || 'en';
 
             sheet.classList.remove('hidden');
             overlay.classList.remove('hidden');
 
             const isSale = task.task_type === 'sale';
+            const typeLabel = isSale ? translations[lang].type_sale : translations[lang].type_service;
+
+            let clientInfoHtml = '';
+            if (task.client) {
+                clientInfoHtml = `
+                    <div class="mt-4">
+                        <h4 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 ml-2">${translations[lang].contact_person_heading}</h4>
+                        <div class="bg-gray-50 dark:bg-gray-900/50 rounded-3xl p-6 border border-gray-100 dark:border-gray-800">
+                            <p class="font-bold text-lg">${task.client.full_name}</p>
+                            ${task.client.position ? `<p class="text-sm text-gray-500">${task.client.position}</p>` : ''}
+                            ${task.client.email ? `<p class="text-sm text-blue-500"><a href="mailto:${task.client.email}">${task.client.email}</a></p>` : ''}
+                            ${task.client.phone ? `<p class="text-sm text-gray-600 dark:text-gray-400">${task.client.phone}</p>` : ''}
+                        </div>
+                    </div>
+                `;
+            }
+
+            let filesListHtml = '';
+            if (task.files && task.files.length > 0) {
+                filesListHtml = `
+                    <div class="mt-4">
+                        <h4 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 ml-2">${translations[lang].attachments_heading}</h4>
+                        <div class="space-y-2">
+                            ${task.files.map(file => `
+                                <a href="${API_URL}/${file.file_path}" target="_blank" class="flex items-center justify-between bg-gray-100 dark:bg-gray-800 px-4 py-3 rounded-2xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors font-bold text-sm">
+                                    <div class="flex items-center gap-2">
+                                        <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
+                                        <span>${file.file_name}</span>
+                                    </div>
+                                    <span class="text-xs text-gray-500">${translations[lang].file_uploaded_at}: ${new Date(file.uploaded_at).toLocaleDateString()}</span>
+                                </a>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+
+            let auditLogHtml = '';
+            if (task.audit_logs && task.audit_logs.length > 0) {
+                auditLogHtml = `
+                    <div class="mt-4">
+                        <h4 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 ml-2">${translations[lang].audit_log_heading}</h4>
+                        <div class="bg-gray-50 dark:bg-gray-900/50 rounded-3xl p-6 border border-gray-100 dark:border-gray-800 space-y-3">
+                            ${task.audit_logs.sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).map(log => `
+                                <div class="text-xs text-gray-600 dark:text-gray-400">
+                                    <span class="font-bold">${new Date(log.created_at).toLocaleString()}</span>: ${log.description || log.action}
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+
 
             body.innerHTML = `
                 <div class="max-w-3xl mx-auto pt-4 pb-8 h-full flex flex-col">
                     <div class="flex flex-col md:flex-row justify-between items-start gap-4 mb-8">
                         <div>
                             <div class="flex items-center gap-3 mb-2">
-                                <span class="text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full ${isSale ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' : 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300'}">${isSale ? 'Sale' : 'Service'}</span>
-                                <span class="text-xs font-bold text-gray-400 uppercase tracking-widest">Status: ${task.status}</span>
+                                <span class="text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full ${isSale ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' : 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300'}">${typeLabel}</span>
+                                <span class="text-xs font-bold text-gray-400 uppercase tracking-widest">${translations[lang].status_label}: ${translations[lang][`status_${task.status}`]}</span>
                             </div>
                             <h2 class="text-3xl sm:text-4xl font-black tracking-tighter leading-tight">${task.title}</h2>
                             ${task.company_name ? `<p class="text-sm font-bold text-gray-500 uppercase tracking-tight mt-2 flex items-center gap-1"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg> ${task.company_name}</p>` : ''}
                         </div>
-                        ${task.amount ? `<div class="text-3xl sm:text-4xl font-black text-green-600 dark:text-green-400 shrink-0">${task.amount.toLocaleString('en-US', {style:'currency', currency:'USD'}).replace('.00','')}</div>` : ''}
+                        ${task.amount ? `<div class="text-3xl sm:text-4xl font-black text-green-600 dark:text-green-400 shrink-0">${task.amount.toLocaleString(lang === 'ua' ? 'uk-UA' : 'en-US', {style:'currency', currency:'USD'}).replace('.00','')}</div>` : ''}
                     </div>
 
                     <div class="flex-1 overflow-y-auto space-y-6 min-h-[150px]">
+                        ${clientInfoHtml}
+
                         ${task.description ? `
                         <div>
-                            <h4 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 ml-2">Description</h4>
+                            <h4 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 ml-2">${translations[lang].description_heading}</h4>
                             <div class="bg-gray-50 dark:bg-gray-900/50 rounded-3xl p-6 border border-gray-100 dark:border-gray-800">
                                 <p class="font-medium leading-relaxed whitespace-pre-wrap">${task.description}</p>
                             </div>
@@ -460,46 +706,48 @@
 
                         ${task.comment ? `
                         <div>
-                            <h4 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 ml-2">Last Comment</h4>
+                            <h4 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 ml-2">${translations[lang].last_comment_heading}</h4>
                             <div class="bg-yellow-50 dark:bg-yellow-900/10 rounded-3xl p-6 border border-yellow-100 dark:border-yellow-900/30">
                                 <p class="font-medium leading-relaxed text-yellow-900 dark:text-yellow-200 whitespace-pre-wrap">${task.comment}</p>
                             </div>
                         </div>` : ''}
 
-                        ${task.file_path ? `
-                        <div>
-                            <h4 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 ml-2">Attachments</h4>
-                            <a href="${API_URL}/${task.file_path}" target="_blank" class="inline-flex items-center gap-3 bg-gray-100 dark:bg-gray-800 px-5 py-3 rounded-2xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors font-bold text-sm">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
-                                Document Attached
-                            </a>
-                        </div>` : ''}
+                        ${filesListHtml}
+
+                        ${auditLogHtml}
                     </div>
 
                     <div class="mt-8 pt-6 border-t border-gray-100 dark:border-gray-700 shrink-0">
-                        ${task.status === 'new' ? `
-                            <button onclick="updateStatus(${task.id}, 'active')" class="w-full bg-black dark:bg-white text-white dark:text-black py-4 rounded-2xl font-black hover:scale-[1.01] transition-transform shadow-lg uppercase tracking-widest">Move to Work</button>
-                        ` : task.status === 'active' || task.status === 'processing' ? `
-                            <div class="flex flex-col gap-3">
-                                <textarea id="statusComment" placeholder="Add comment (optional)..." class="w-full bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-black dark:focus:ring-white transition-all resize-none h-20 font-medium"></textarea>
-                                <div class="flex gap-3">
-                                    <input type="file" id="fileUpload" class="hidden" onchange="handleFileUpload(${task.id})">
-                                    <button onclick="document.getElementById('fileUpload').click()" class="px-6 bg-gray-100 dark:bg-gray-700 text-black dark:text-white rounded-2xl hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors" title="Attach Document">
-                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
+                        <div class="flex items-center gap-3 mb-3">
+                            ${task.status !== 'new' ? `
+                                <button onclick="rollbackTask(${task.id}, '${task.status}')" class="p-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" title="${translations[lang].rollback_btn_title}">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                                </button>
+                            ` : ''}
+                            <div class="flex-1 flex gap-3">
+                                <button onclick="generatePdf(${task.id})" class="flex-1 bg-blue-500 text-white py-4 rounded-2xl font-black hover:bg-blue-600 hover:scale-[1.01] transition-all shadow-lg uppercase tracking-widest">${translations[lang].generate_pdf_btn}</button>
+                                ${task.status === 'new' ? `
+                                    <button onclick="updateStatus(${task.id}, 'active')" class="flex-1 bg-black dark:bg-white text-white dark:text-black py-4 rounded-2xl font-black hover:scale-[1.01] transition-transform shadow-lg uppercase tracking-widest">${translations[lang].move_to_work_btn}</button>
+                                ` : task.status === 'active' || task.status === 'processing' ? `
+                                    <button onclick="updateStatus(${task.id}, '${task.status === 'active' ? 'processing' : 'completed'}', document.getElementById('statusComment').value)" class="flex-1 ${task.status === 'active' ? 'bg-black dark:bg-white text-white dark:text-black' : 'bg-green-500 text-white'} py-4 rounded-2xl font-black hover:scale-[1.01] transition-transform shadow-lg uppercase tracking-widest">${task.status === 'active' ? translations[lang].processing_btn : translations[lang].mark_done_btn}</button>
+                                ` : `
+                                    <button onclick="deleteTask(${task.id})" class="flex-1 bg-red-500 text-white py-4 rounded-2xl font-black hover:bg-red-600 transition-colors uppercase tracking-widest flex items-center justify-center gap-2">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                        ${translations[lang].move_to_trash_btn}
                                     </button>
-                                    ${task.status === 'active' ? `
-                                        <button onclick="updateStatus(${task.id}, 'processing', document.getElementById('statusComment').value)" class="flex-1 bg-black dark:bg-white text-white dark:text-black py-4 rounded-2xl font-black hover:scale-[1.01] transition-transform uppercase tracking-widest">Processing</button>
-                                    ` : `
-                                        <button onclick="updateStatus(${task.id}, 'completed', document.getElementById('statusComment').value)" class="flex-1 bg-green-500 text-white py-4 rounded-2xl font-black hover:bg-green-600 hover:scale-[1.01] transition-all shadow-lg uppercase tracking-widest">Mark Done</button>
-                                    `}
-                                </div>
+                                `}
                             </div>
-                        ` : `
-                            <button onclick="deleteTask(${task.id})" class="w-full bg-red-500 text-white py-4 rounded-2xl font-black hover:bg-red-600 transition-colors uppercase tracking-widest flex items-center justify-center gap-2">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                                Move to Trash
-                            </button>
-                        `}
+                        </div>
+                        ${task.status === 'active' || task.status === 'processing' ? `
+                            <div class="flex gap-3">
+                                <textarea id="statusComment" placeholder="${translations[lang].add_comment_placeholder}" class="flex-1 bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-black dark:focus:ring-white transition-all resize-none h-20 font-medium"></textarea>
+                                <input type="file" id="fileUpload" multiple class="hidden" onchange="handleFileUpload(${task.id})">
+                                <button onclick="document.getElementById('fileUpload').click()" class="px-6 bg-gray-100 dark:bg-gray-700 text-black dark:text-white py-4 rounded-2xl hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors font-black uppercase tracking-widest flex items-center justify-center gap-2" title="${translations[lang].attach_doc_title}">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                                    ${translations[lang].add_document_btn}
+                                </button>
+                            </div>
+                        ` : ''}
                     </div>
                 </div>
             `;
@@ -541,6 +789,32 @@
             }
         }
 
+        async function rollbackTask(id, currentStatus) {
+            let previousStatus;
+            switch (currentStatus) {
+                case 'completed': previousStatus = 'processing'; break;
+                case 'processing': previousStatus = 'active'; break;
+                case 'active': previousStatus = 'new'; break;
+                default: showToast('Cannot rollback from "new" status', 'info'); return;
+            }
+
+            const res = await fetchWrapper(`/tasks/${id}/status`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: previousStatus })
+            });
+
+            if (res.success) {
+                showToast(`Task moved back to ${previousStatus}`, 'success');
+                await loadTasks();
+                const updated = currentTasks.find(t => t.id === id);
+                if (updated) openSheet(updated);
+                else closeSheet();
+            } else {
+                showToast(res.error, 'error');
+            }
+        }
+
         async function deleteTask(id) {
             const res = await fetchWrapper(`/tasks/${id}`, { method: 'DELETE' });
             if (res.success) {
@@ -555,16 +829,65 @@
             if (!input.files.length) return;
 
             const formData = new FormData();
-            formData.append('file', input.files[0]);
-            showToast('Uploading...', 'info');
+            for (let i = 0; i < input.files.length; i++) {
+                formData.append('files', input.files[i]);
+            }
 
-            const res = await fetchWrapper(`/tasks/${taskId}/upload`, { method: 'POST', body: formData });
+            showToast('Uploading files...', 'info');
+
+            const res = await fetchWrapper(`/tasks/${taskId}/files`, { method: 'POST', body: formData });
             if (res.success) {
-                showToast('File attached', 'success');
+                showToast('Files attached', 'success');
                 await loadTasks();
                 openSheet(currentTasks.find(t => t.id === taskId));
-            } else showToast(res.error, 'error');
+            } else {
+                showToast(res.error, 'error');
+            }
         }
+
+        async function generatePdf(taskId) {
+            showToast('Generating PDF...', 'info');
+            try {
+                const res = await fetch(`${API_URL}/tasks/${taskId}/pdf`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept-Language': localStorage.getItem('language') || 'en'
+                    }
+                });
+
+                if (!res.ok) {
+                    const errorData = await res.json().catch(() => null);
+                    showToast(errorData?.detail || 'Failed to generate PDF', 'error');
+                    return;
+                }
+
+                const blob = await res.blob();
+                const contentDisposition = res.headers.get('Content-Disposition');
+                let filename = `task_${taskId}_proposal.pdf`;
+                if (contentDisposition) {
+                    const filenameMatch = contentDisposition.match(/filename="([^"]+)"/);
+                    if (filenameMatch && filenameMatch[1]) {
+                        filename = filenameMatch[1];
+                    }
+                }
+
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(url);
+                showToast('PDF generated and downloaded!', 'success');
+
+            } catch (error) {
+                showToast('Network error or failed to generate PDF', 'error');
+                console.error('PDF generation error:', error);
+            }
+        }
+
 
         async function toggleTrashModal() {
             const modal = document.getElementById('trashModal');
@@ -583,11 +906,12 @@
             const list = document.getElementById('trashList');
             const btn = document.getElementById('emptyTrashBtn');
             const count = document.getElementById('trashCount');
+            const lang = localStorage.getItem('language') || 'en';
             list.innerHTML = '';
             count.textContent = `${tasks.length} items`;
 
             if (tasks.length === 0) {
-                list.innerHTML = '<div class="p-10 text-center text-gray-400 font-bold">Trash is empty</div>';
+                list.innerHTML = `<div class="p-10 text-center text-gray-400 font-bold">${translations[lang].trash_empty || 'Trash is empty'}</div>`;
                 btn.classList.add('hidden');
                 return;
             }
@@ -599,9 +923,9 @@
                 el.innerHTML = `
                     <div class="overflow-hidden mr-4">
                         <div class="font-bold line-through opacity-50 truncate">${task.title}</div>
-                        <div class="text-xs font-bold text-gray-400 uppercase mt-1">${task.task_type}</div>
+                        <div class="text-xs font-bold text-gray-400 uppercase mt-1">${translations[lang][`type_${task.task_type}`]}</div>
                     </div>
-                    <button onclick="restoreTask(${task.id})" class="shrink-0 bg-black dark:bg-white text-white dark:text-black px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest hover:scale-105 transition-transform">Restore</button>
+                    <button onclick="restoreTask(${task.id})" class="shrink-0 bg-black dark:bg-white text-white dark:text-black px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest hover:scale-105 transition-transform">${translations[lang].restore_btn}</button>
                 `;
                 list.appendChild(el);
             });
@@ -626,12 +950,17 @@
             } else showToast(res.error, 'error');
         }
 
-        if(!token) {
-            document.getElementById('authModal').classList.remove('hidden');
-        } else {
-            document.getElementById('logoutBtn').classList.remove('hidden');
-            loadTasks();
-        }
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedLang = localStorage.getItem('language') || 'en';
+            setLanguage(savedLang);
+
+            if(!token) {
+                document.getElementById('authModal').classList.remove('hidden');
+            } else {
+                document.getElementById('logoutBtn').classList.remove('hidden');
+                loadTasks();
+            }
+        });
     </script>
 </body>
 </html>

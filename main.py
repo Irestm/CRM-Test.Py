@@ -5,6 +5,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.exceptions import RequestValidationError
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
+
+import domain
+from domain import Base
+from core.database import engine
+
 from api.routers.client import router as client_router
 from api.routers.auth import router as auth_router
 from api.routers.task import router as task_router
@@ -24,6 +29,9 @@ async def scheduled_backup():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
     await init_db()
     scheduler.add_job(scheduled_backup, "interval", hours=12)
     scheduler.start()

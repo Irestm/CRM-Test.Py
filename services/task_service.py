@@ -5,6 +5,7 @@ from fastapi import UploadFile
 from schemas.task import TaskCreate, TaskResponse, TaskUpdateStatus
 from infrastructure.uow import UnitOfWork
 from domain.task import Task
+from domain.audit_log import AuditLog
 from services.pdf_parser import extract_text_from_pdf
 
 UPLOAD_DIR = "uploads"
@@ -18,7 +19,8 @@ async def create_task(task_data: TaskCreate, user_id: int, uow: UnitOfWork) -> T
             task_type=task_data.task_type,
             company_name=task_data.company_name,
             amount=task_data.amount,
-            user_id=user_id
+            user_id=user_id,
+            client_id=task_data.client_id # Add client_id here
         )
         added_task = await uow.tasks.add(new_task)
         await uow.commit()
@@ -34,11 +36,23 @@ async def update_task_status(task_id: int, user_id: int, status_data: TaskUpdate
         task = await uow.tasks.get(task_id)
         if not task or task.user_id != user_id or task.is_deleted:
             return None
-            
+        
+        original_status = task.status
+        original_amount = task.amount
+
         task.status = status_data.status
         if status_data.comment:
             task.comment = status_data.comment
-            
+        
+        # Assuming amount can also be updated via this endpoint or another one
+        # For now, only status change is explicitly handled for audit log here.
+        # If amount is updated, you'd add a similar check.
+        
+        if original_status != task.status:
+            audit_description = f"Status changed from '{original_status}' to '{task.status}'"
+            audit_log = AuditLog(task_id=task.id, user_id=user_id, action="TASK_STATUS_UPDATE", description=audit_description)
+            uow.session.add(audit_log) # Assuming uow.session gives access to the SQLAlchemy session
+
         updated_task = await uow.tasks.update(task)
         await uow.commit()
         return TaskResponse.model_validate(updated_task)
@@ -50,6 +64,8 @@ async def delete_task(task_id: int, user_id: int, uow: UnitOfWork) -> bool:
             return False
             
         task.is_deleted = True
+        audit_log = AuditLog(task_id=task.id, user_id=user_id, action="TASK_DELETED", description="Task marked as deleted")
+        uow.session.add(audit_log)
         await uow.tasks.update(task)
         await uow.commit()
         return True
@@ -61,35 +77,17 @@ async def restore_task(task_id: int, user_id: int, uow: UnitOfWork) -> bool:
             return False
             
         task.is_deleted = False
+        audit_log = AuditLog(task_id=task.id, user_id=user_id, action="TASK_RESTORED", description="Task restored from trash")
+        uow.session.add(audit_log)
         await uow.tasks.update(task)
         await uow.commit()
         return True
 
 async def empty_trash(user_id: int, uow: UnitOfWork) -> None:
     async with uow:
+        # This operation might delete multiple tasks, so logging each deletion might be too verbose.
+        # A single log for emptying trash might be more appropriate, or detailed logging within the repository.
         await uow.tasks.delete_all_trashed_by_user(user_id)
         await uow.commit()
 
-async def upload_file_to_task(task_id: int, user_id: int, file: UploadFile, uow: UnitOfWork) -> Optional[TaskResponse]:
-    async with uow:
-        task = await uow.tasks.get(task_id)
-        if not task or task.user_id != user_id or task.is_deleted:
-            return None
-            
-        file_ext = file.filename.split(".")[-1] if file.filename else "bin"
-        file_name = f"{uuid.uuid4()}.{file_ext}"
-        file_path = os.path.join(UPLOAD_DIR, file_name)
-        
-        file_bytes = await file.read()
-        
-        with open(file_path, "wb") as f:
-            f.write(file_bytes)
-            
-        if file_ext.lower() == "pdf":
-            parsed_text = await extract_text_from_pdf(file_bytes)
-            task.description = (task.description or "") + "\n\n[Parsed Content]:\n" + parsed_text
-
-        task.file_path = file_path
-        updated_task = await uow.tasks.update(task)
-        await uow.commit()
-        return TaskResponse.model_validate(updated_task)
+# Removed upload_file_to_task as it's replaced by the new endpoint

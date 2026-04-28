@@ -1,6 +1,6 @@
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from core.security import decode_access_token
+from src.core.security import decode_access_token
 from infrastructure.uow import UnitOfWork
 from api.dependencies import get_uow
 from domain.user import User

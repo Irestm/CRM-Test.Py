@@ -1,9 +1,9 @@
 from typing import AsyncGenerator
 from sqlalchemy.ext.asyncio import AsyncSession
-from core.database import async_session_factory
+from src.core.database import async_session_factory
 from infrastructure.uow import SqlAlchemyUnitOfWork
-from infrastructure.backup.local_hdd import LocalHDDStorage
-from services.backup_service import BackupService
+from src.infrastructure.backup.local_hdd import LocalHDDStorage
+from src.services.backup_service import BackupService
 
 async def get_session() -> AsyncGenerator[AsyncSession, None]:
     async with async_session_factory() as session:

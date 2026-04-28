@@ -14,10 +14,16 @@ sys.path.insert(0, os.path.realpath(os.path.join(os.path.dirname(__file__), '..'
 from core.database import Base
 from domain.task import Task
 from domain.user import User
+from domain.task_file import TaskFile
+from domain.audit_log import AuditLog
+from domain.client import Client
 from infrastructure.orm import TaskModel, UserModel, ClientModel
 
 _ = Task
 _ = User
+_ = TaskFile
+_ = AuditLog
+_ = Client
 _ = TaskModel
 _ = UserModel
 _ = ClientModel
