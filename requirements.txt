@@ -1,0 +1,11 @@
+fastapi
+uvicorn
+sqlalchemy
+aiosqlite
+pydantic
+pydantic-settings
+apscheduler
+pyjwt
+argon2-cffi
+pypdf2
+python-multipart

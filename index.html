@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CRM Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { darkMode: 'class' }
+    </script>
+    <style>
+        .toast-enter { transform: translateX(100%); opacity: 0; }
+        .toast-enter-active { transform: translateX(0); opacity: 1; transition: all 300ms ease-out; }
+        .toast-exit { transform: translateX(0); opacity: 1; }
+        .toast-exit-active { transform: translateX(100%); opacity: 0; transition: all 300ms ease-in; }
+        .tab-active { border-bottom: 2px solid #4f46e5; color: #4f46e5; font-weight: 600; }
+        .dark .tab-active { border-bottom: 2px solid #818cf8; color: #818cf8; }
+    </style>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 font-sans h-screen flex flex-col overflow-hidden transition-colors duration-200">
+
+    <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <header class="flex justify-between items-center p-4 bg-white dark:bg-gray-800 shadow-sm z-10 shrink-0 transition-colors duration-200">
+        <div class="flex items-center gap-2 cursor-pointer" onclick="resetView()">
+            <svg class="w-8 h-8 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+            </svg>
+            <span class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400">CRM<span class="font-light">Pro</span></span>
+        </div>
+
+        <div id="topTabs" class="flex-1 flex justify-center hidden sm:flex gap-4">
+            <button onclick="setFilter(null, this)" class="tab-active px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">All</button>
+            <button onclick="setFilter('new', this)" class="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">New</button>
+            <button onclick="setFilter('active', this)" class="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">Active</button>
+            <button onclick="setFilter('processing', this)" class="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">Processing</button>
+            <button onclick="setFilter('completed', this)" class="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">Completed</button>
+        </div>
+
+        <div class="flex items-center gap-4">
+            <button id="authBtn" onclick="toggleAuthModal()" class="text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 hidden">Login / Register</button>
+            <button id="logoutBtn" onclick="logout()" class="text-sm font-medium text-red-500 hover:text-red-700 hidden">Logout</button>
+
+            <button onclick="toggleTrashModal()" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors relative" title="Trash">
+                <svg class="w-6 h-6 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                </svg>
+            </button>
+
+            <button onclick="toggleTheme()" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" title="Toggle Theme">
+                <svg id="sun-icon" class="w-6 h-6 text-yellow-500 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                </svg>
+                <svg id="moon-icon" class="w-6 h-6 text-gray-600 block dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+                </svg>
+            </button>
+        </div>
+    </header>
+
+    <div id="authModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
+        <div class="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-2xl w-96 max-w-[90%] transition-colors duration-200">
+            <h2 class="text-2xl font-bold mb-6 text-center">Authentication</h2>
+            <div class="space-y-4 relative">
+                <div>
+                    <input type="email" id="email" placeholder="Email" class="w-full border dark:border-gray-600 dark:bg-gray-700 dark:text-white p-3 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition-all">
+                    <p id="emailError" class="text-red-500 text-xs mt-1 hidden"></p>
+                </div>
+                <div>
+                    <input type="password" id="password" placeholder="Password" class="w-full border dark:border-gray-600 dark:bg-gray-700 dark:text-white p-3 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition-all">
+                    <p id="passwordError" class="text-red-500 text-xs mt-1 hidden"></p>
+                </div>
+                <div id="generalAuthError" class="text-red-500 text-sm text-center hidden"></div>
+                <div class="flex gap-4 pt-2">
+                    <button onclick="register()" class="flex-1 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 py-3 rounded-lg font-medium hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">Register</button>
+                    <button onclick="login()" class="flex-1 bg-indigo-600 text-white py-3 rounded-lg font-medium hover:bg-indigo-700 transition-colors shadow-md hover:shadow-lg">Login</button>
+                </div>
+            </div>
+            <button onclick="toggleAuthModal()" class="mt-6 w-full text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">Close</button>
+        </div>
+    </div>
+
+    <div id="trashModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-2xl w-[600px] max-w-[90%] max-h-[80vh] flex flex-col transition-colors duration-200">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold flex items-center gap-2">
+                    <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                    Trash Bin
+                </h2>
+                <button onclick="toggleTrashModal()" class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+
+            <div id="trashList" class="flex-1 overflow-y-auto space-y-2 mb-4 p-2 bg-gray-50 dark:bg-gray-900 rounded-lg">
+            </div>
+
+            <div class="flex justify-end gap-3 pt-4 border-t dark:border-gray-700">
+                <button onclick="toggleTrashModal()" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-lg font-medium hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">Close</button>
+                <button onclick="emptyTrash()" id="emptyTrashBtn" class="px-4 py-2 bg-red-500 text-white rounded-lg font-medium hover:bg-red-600 transition-colors hidden">Empty Trash</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="flex flex-1 overflow-hidden">
+        <aside id="sidebar" class="w-80 bg-white dark:bg-gray-800 border-r dark:border-gray-700 flex flex-col transition-colors duration-200 hidden sm:flex shrink-0">
+            <div class="p-4 border-b dark:border-gray-700 flex justify-between items-center">
+                <h2 class="text-lg font-bold flex items-center gap-2">
+                    Tasks
+                    <span id="taskCountBadge" class="bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200 text-xs font-semibold px-2.5 py-0.5 rounded-full hidden">0</span>
+                </h2>
+                <button onclick="showNewTaskForm()" class="p-1 rounded bg-indigo-50 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-800">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                </button>
+            </div>
+            <div id="sidebarTaskList" class="flex-1 overflow-y-auto p-2 space-y-1">
+            </div>
+        </aside>
+
+        <main id="mainArea" class="flex-1 bg-gray-50 dark:bg-gray-900 flex flex-col relative transition-colors duration-200">
+            <div id="welcomeState" class="absolute inset-0 flex flex-col items-center justify-center text-gray-400">
+                <svg class="w-24 h-24 mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                </svg>
+                <p class="text-xl font-medium">Select a task or create a new one</p>
+                <p class="text-sm mt-2">Manage your workflow efficiently</p>
+            </div>
+
+            <div id="newTaskForm" class="absolute inset-0 bg-white dark:bg-gray-800 p-8 flex flex-col hidden z-10">
+                <h2 class="text-2xl font-bold mb-6">Create New Task</h2>
+                <input type="text" id="newTaskTitle" placeholder="Task Title" class="w-full border dark:border-gray-600 dark:bg-gray-700 dark:text-white p-4 rounded-lg text-lg mb-4 focus:ring-2 focus:ring-indigo-500 outline-none">
+                <textarea id="newTaskDesc" placeholder="Description..." class="w-full border dark:border-gray-600 dark:bg-gray-700 dark:text-white p-4 rounded-lg mb-6 flex-1 resize-none focus:ring-2 focus:ring-indigo-500 outline-none"></textarea>
+                <div class="flex gap-4">
+                    <button onclick="submitNewTask()" class="bg-indigo-600 text-white px-8 py-3 rounded-lg font-medium hover:bg-indigo-700 transition-colors">Create Task</button>
+                    <button onclick="resetView()" class="bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 px-8 py-3 rounded-lg font-medium hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">Cancel</button>
+                </div>
+            </div>
+
+            <div id="taskChatView" class="absolute inset-0 flex flex-col hidden bg-white dark:bg-gray-800">
+                <div class="p-4 border-b dark:border-gray-700 flex justify-between items-center bg-white dark:bg-gray-800 z-10 shrink-0">
+                    <div>
+                        <h2 id="chatTaskTitle" class="text-xl font-bold"></h2>
+                        <div class="flex items-center gap-2 mt-1 text-sm text-gray-500 dark:text-gray-400">
+                            <span>Status:</span>
+                            <span id="chatTaskStatus" class="font-medium px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700"></span>
+                        </div>
+                    </div>
+                    <div id="chatHeaderActions" class="flex gap-2">
+                        <button onclick="deleteCurrentTask()" class="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors hidden" title="Move to Trash" id="deleteTaskBtn">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="chatMessages" class="flex-1 overflow-y-auto p-6 space-y-6 bg-gray-50 dark:bg-gray-900">
+                </div>
+
+                <div class="p-4 bg-white dark:bg-gray-800 border-t dark:border-gray-700 shrink-0 hidden" id="chatInputArea">
+                    <div class="flex flex-col gap-3">
+                        <div id="statusActions" class="flex gap-2 flex-wrap mb-2"></div>
+                        <div class="flex items-end gap-2">
+                            <input type="file" id="fileUpload" class="hidden" onchange="handleFileUpload()">
+                            <button onclick="document.getElementById('fileUpload').click()" class="p-3 text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-gray-700 rounded-full transition-colors shrink-0" title="Attach PDF">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
+                            </button>
+
+                            <div class="flex-1 relative flex items-center">
+                                <input type="text" id="statusComment" placeholder="Add an optional comment..." class="w-full border dark:border-gray-600 dark:bg-gray-700 dark:text-white p-3 pr-24 rounded-full outline-none focus:ring-2 focus:ring-indigo-500 transition-shadow">
+                                <div id="inlineActionBtnContainer" class="absolute right-1"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:8000';
+        let token = localStorage.getItem('token');
+        let currentTasks = [];
+        let selectedTaskId = null;
+        let currentFilter = null;
+
+        function showToast(message, type = 'error') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            const colors = { error: 'bg-red-500 text-white', success: 'bg-green-500 text-white', info: 'bg-blue-500 text-white' };
+
+            toast.className = `toast-enter flex items-center p-4 rounded-lg shadow-lg ${colors[type]} max-w-sm pointer-events-auto`;
+            toast.innerHTML = `<div class="flex-1 text-sm font-medium">${message}</div><button onclick="this.parentElement.remove()" class="ml-4 opacity-80 hover:opacity-100">&times;</button>`;
+            container.appendChild(toast);
+
+            requestAnimationFrame(() => {
+                toast.classList.remove('toast-enter');
+                toast.classList.add('toast-enter-active');
+            });
+            setTimeout(() => {
+                toast.classList.remove('toast-enter-active');
+                toast.classList.add('toast-exit');
+                requestAnimationFrame(() => {
+                    toast.classList.add('toast-exit-active');
+                    setTimeout(() => toast.remove(), 300);
+                });
+            }, 5000);
+        }
+
+        function clearAuthErrors() {
+            document.getElementById('emailError').classList.add('hidden');
+            document.getElementById('passwordError').classList.add('hidden');
+            document.getElementById('generalAuthError').classList.add('hidden');
+            document.getElementById('email').classList.remove('border-red-500');
+            document.getElementById('password').classList.remove('border-red-500');
+        }
+
+        function showAuthError(msg, field = 'general') {
+            if (field === 'email') {
+                const el = document.getElementById('emailError');
+                el.textContent = msg;
+                el.classList.remove('hidden');
+                document.getElementById('email').classList.add('border-red-500');
+            } else if (field === 'password') {
+                const el = document.getElementById('passwordError');
+                el.textContent = msg;
+                el.classList.remove('hidden');
+                document.getElementById('password').classList.add('border-red-500');
+            } else {
+                const el = document.getElementById('generalAuthError');
+                el.textContent = msg;
+                el.classList.remove('hidden');
+            }
+        }
+
+        async function fetchWrapper(endpoint, options = {}) {
+            const headers = { ...options.headers };
+            if (token) headers['Authorization'] = `Bearer ${token}`;
+
+            try {
+                const res = await fetch(`${API_URL}${endpoint}`, { ...options, headers });
+                if (res.status === 204) return { success: true, data: null };
+                const data = await res.json().catch(() => null);
+
+                if (!res.ok) {
+                    if (res.status === 401 && endpoint !== '/auth/login') {
+                        logout(false);
+                        showToast('Session expired. Please login again.', 'error');
+                        return { success: false, error: 'Unauthorized', status: 401 };
+                    }
+
+                    let errMsg = 'An error occurred';
+                    if (data) {
+                        if (data.message) errMsg = data.message;
+                        else if (data.detail) errMsg = typeof data.detail === 'string' ? data.detail : JSON.stringify(data.detail);
+                    }
+                    return { success: false, error: errMsg, data, status: res.status };
+                }
+                return { success: true, data, status: res.status };
+            } catch (err) {
+                return { success: false, error: 'Network error. Is the server running?', status: 0 };
+            }
+        }
+
+        function toggleTheme() {
+            const html = document.documentElement;
+            html.classList.toggle('dark');
+            html.classList.toggle('light');
+            localStorage.setItem('theme', html.classList.contains('dark') ? 'dark' : 'light');
+        }
+
+        if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+            document.documentElement.classList.remove('light');
+        }
+
+        function toggleAuthModal() {
+            clearAuthErrors();
+            document.getElementById('authModal').classList.toggle('hidden');
+        }
+
+        async function toggleTrashModal() {
+            const modal = document.getElementById('trashModal');
+            if (modal.classList.contains('hidden')) {
+                const res = await fetchWrapper('/tasks/deleted');
+                if (res.success) {
+                    renderTrashList(res.data);
+                    modal.classList.remove('hidden');
+                } else {
+                    showToast(res.error, 'error');
+                }
+            } else {
+                modal.classList.add('hidden');
+            }
+        }
+
+        function updateAuthUI() {
+            if (token) {
+                document.getElementById('authBtn').classList.add('hidden');
+                document.getElementById('logoutBtn').classList.remove('hidden');
+                document.getElementById('sidebar').classList.remove('hidden');
+                document.getElementById('topTabs').classList.remove('hidden');
+                document.getElementById('authModal').classList.add('hidden');
+                loadTasks();
+            } else {
+                document.getElementById('authBtn').classList.remove('hidden');
+                document.getElementById('logoutBtn').classList.add('hidden');
+                document.getElementById('sidebar').classList.add('hidden');
+                document.getElementById('topTabs').classList.add('hidden');
+                resetView();
+                if(document.getElementById('authModal').classList.contains('hidden')) toggleAuthModal();
+            }
+        }
+
+        async function register() {
+            clearAuthErrors();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            if (!email) return showAuthError('Email required', 'email');
+            if (!password) return showAuthError('Password required', 'password');
+
+            const res = await fetchWrapper('/auth/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+            if (res.success) {
+                showToast('Registration successful! You can now login.', 'success');
+                toggleAuthModal();
+            } else {
+                showAuthError(res.error);
+            }
+        }
+
+        async function login() {
+            clearAuthErrors();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            if (!email) return showAuthError('Email required', 'email');
+            if (!password) return showAuthError('Password required', 'password');
+
+            const res = await fetchWrapper('/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+            if (res.success) {
+                token = res.data.access_token;
+                localStorage.setItem('token', token);
+                updateAuthUI();
+                showToast('Logged in successfully', 'success');
+            } else {
+                showAuthError(res.error);
+            }
+        }
+
+        function logout(showMsg = true) {
+            token = null;
+            localStorage.removeItem('token');
+            currentTasks = [];
+            selectedTaskId = null;
+            updateAuthUI();
+            if(showMsg) showToast('Logged out', 'info');
+        }
+
+        function setFilter(status, btnElement) {
+            currentFilter = status;
+            document.querySelectorAll('#topTabs button').forEach(b => b.classList.remove('tab-active'));
+            if(btnElement) btnElement.classList.add('tab-active');
+            loadTasks();
+        }
+
+        async function loadTasks() {
+            if (!token) return;
+            let url = '/tasks/';
+            if (currentFilter) url += `?status=${currentFilter}`;
+
+            const res = await fetchWrapper(url);
+            if (res.success) {
+                currentTasks = res.data;
+                renderSidebar();
+                if (selectedTaskId) {
+                    const stillExists = currentTasks.find(t => t.id === selectedTaskId);
+                    if (stillExists) renderTaskChat(stillExists);
+                    else resetView();
+                }
+            } else {
+                showToast(res.error, 'error');
+            }
+        }
+
+        function renderSidebar() {
+            const list = document.getElementById('sidebarTaskList');
+            const badge = document.getElementById('taskCountBadge');
+            list.innerHTML = '';
+            badge.textContent = currentTasks.length;
+            badge.classList.toggle('hidden', currentTasks.length === 0);
+
+            if (currentTasks.length === 0) {
+                list.innerHTML = '<div class="p-4 text-center text-gray-500 text-sm">No tasks found</div>';
+                return;
+            }
+
+            const statusColors = { 'new': 'bg-blue-500', 'active': 'bg-yellow-500', 'processing': 'bg-orange-500', 'completed': 'bg-green-500' };
+
+            currentTasks.forEach(task => {
+                const el = document.createElement('div');
+                const isSelected = task.id === selectedTaskId;
+                el.className = `p-3 rounded-lg cursor-pointer transition-colors flex items-center gap-3 ${isSelected ? 'bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-100 dark:border-indigo-800' : 'hover:bg-gray-50 dark:hover:bg-gray-700 border border-transparent'}`;
+                el.onclick = () => selectTask(task.id);
+                el.innerHTML = `
+                    <div class="w-2 h-2 rounded-full shrink-0 ${statusColors[task.status] || 'bg-gray-400'}"></div>
+                    <div class="flex-1 truncate">
+                        <div class="font-medium text-sm truncate">${task.title}</div>
+                        <div class="text-xs text-gray-500 dark:text-gray-400 truncate">${task.status} ${task.file_path ? '📎' : ''}</div>
+                    </div>
+                `;
+                list.appendChild(el);
+            });
+        }
+
+        function renderTrashList(tasks) {
+            const list = document.getElementById('trashList');
+            const btn = document.getElementById('emptyTrashBtn');
+            list.innerHTML = '';
+
+            if (tasks.length === 0) {
+                list.innerHTML = '<div class="p-8 text-center text-gray-500">Trash is empty</div>';
+                btn.classList.add('hidden');
+                return;
+            }
+
+            btn.classList.remove('hidden');
+            tasks.forEach(task => {
+                const el = document.createElement('div');
+                el.className = 'p-3 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 flex justify-between items-center';
+                el.innerHTML = `
+                    <div>
+                        <div class="font-medium line-through text-gray-600 dark:text-gray-400">${task.title}</div>
+                        <div class="text-xs text-gray-400">Deleted</div>
+                    </div>
+                `;
+                list.appendChild(el);
+            });
+        }
+
+        async function emptyTrash() {
+            if(!confirm('Permanently delete all tasks in trash?')) return;
+            const res = await fetchWrapper('/tasks/deleted/empty', { method: 'DELETE' });
+            if (res.success) {
+                showToast('Trash emptied', 'success');
+                toggleTrashModal();
+            } else {
+                showToast(res.error, 'error');
+            }
+        }
+
+        function resetView() {
+            selectedTaskId = null;
+            document.getElementById('welcomeState').classList.remove('hidden');
+            document.getElementById('newTaskForm').classList.add('hidden');
+            document.getElementById('taskChatView').classList.add('hidden');
+            renderSidebar();
+        }
+
+        function showNewTaskForm() {
+            selectedTaskId = null;
+            document.getElementById('welcomeState').classList.add('hidden');
+            document.getElementById('taskChatView').classList.add('hidden');
+            document.getElementById('newTaskForm').classList.remove('hidden');
+            document.getElementById('newTaskTitle').value = '';
+            document.getElementById('newTaskDesc').value = '';
+            document.getElementById('newTaskTitle').focus();
+            renderSidebar();
+        }
+
+        async function submitNewTask() {
+            const title = document.getElementById('newTaskTitle').value;
+            const desc = document.getElementById('newTaskDesc').value;
+            if (!title) return showToast('Title is required', 'error');
+
+            const res = await fetchWrapper('/tasks/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title, description: desc })
+            });
+
+            if (res.success) {
+                showToast('Task created', 'success');
+                await loadTasks();
+                selectTask(res.data.id);
+            } else {
+                showToast(res.error, 'error');
+            }
+        }
+
+        function selectTask(id) {
+            selectedTaskId = id;
+            const task = currentTasks.find(t => t.id === id);
+            if (task) renderTaskChat(task);
+        }
+
+        function renderTaskChat(task) {
+            document.getElementById('welcomeState').classList.add('hidden');
+            document.getElementById('newTaskForm').classList.add('hidden');
+            document.getElementById('taskChatView').classList.remove('hidden');
+            renderSidebar();
+
+            document.getElementById('chatTaskTitle').textContent = task.title;
+            document.getElementById('chatTaskStatus').textContent = task.status.toUpperCase();
+
+            const delBtn = document.getElementById('deleteTaskBtn');
+            const inputArea = document.getElementById('chatInputArea');
+            const inlineActions = document.getElementById('inlineActionBtnContainer');
+            const statusComment = document.getElementById('statusComment');
+
+            statusComment.value = '';
+            delBtn.classList.add('hidden');
+            inputArea.classList.add('hidden');
+            inlineActions.innerHTML = '';
+
+            const msgs = document.getElementById('chatMessages');
+            msgs.innerHTML = '<div class="flex justify-center"><span class="bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs px-3 py-1 rounded-full">Task created</span></div>';
+
+            if (task.description) {
+                msgs.innerHTML += `
+                    <div class="flex items-start gap-3 mt-4">
+                        <div class="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center shrink-0">
+                            <svg class="w-4 h-4 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                        </div>
+                        <div class="bg-white dark:bg-gray-800 p-4 rounded-2xl rounded-tl-sm shadow-sm border dark:border-gray-700 max-w-[80%]">
+                            <p class="font-medium mb-1 text-sm">Description</p>
+                            <p class="text-gray-600 dark:text-gray-300 whitespace-pre-wrap text-sm">${task.description}</p>
+                        </div>
+                    </div>`;
+            }
+
+            if (task.comment) {
+                msgs.innerHTML += `
+                    <div class="flex items-start gap-3 mt-4 flex-row-reverse">
+                        <div class="w-8 h-8 rounded-full bg-yellow-100 dark:bg-yellow-900 flex items-center justify-center shrink-0">
+                            <svg class="w-4 h-4 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg>
+                        </div>
+                        <div class="bg-indigo-600 text-white p-4 rounded-2xl rounded-tr-sm shadow-sm max-w-[80%]">
+                            <p class="font-medium text-sm mb-1 text-indigo-200">Comment</p>
+                            <p class="text-sm whitespace-pre-wrap">${task.comment}</p>
+                        </div>
+                    </div>`;
+            }
+
+            if (task.file_path) {
+                msgs.innerHTML += `
+                    <div class="flex justify-center my-4"><span class="bg-indigo-100 text-indigo-800 text-xs px-3 py-1 rounded-full flex items-center gap-1">📎 File attached: ${task.file_path.split('/').pop()}</span></div>`;
+            }
+
+            msgs.scrollTop = msgs.scrollHeight;
+
+            if (task.status === 'new') {
+                inputArea.classList.remove('hidden');
+                statusComment.disabled = true;
+                statusComment.placeholder = 'Take task to proceed...';
+                inlineActions.innerHTML = `<button onclick="updateTaskStatus(${task.id}, 'active')" class="bg-indigo-600 text-white px-4 py-1.5 rounded-full text-sm font-medium hover:bg-indigo-700 transition-colors shadow-sm">Take to Work</button>`;
+            }
+            else if (task.status === 'active' || task.status === 'processing') {
+                inputArea.classList.remove('hidden');
+                statusComment.disabled = false;
+                statusComment.placeholder = 'Add a comment (optional)...';
+                const nextStatus = task.status === 'active' ? 'processing' : 'completed';
+                inlineActions.innerHTML = `<button onclick="updateTaskStatusWithComment(${task.id}, '${nextStatus}')" class="bg-green-500 text-white px-4 py-1.5 rounded-full text-sm font-medium hover:bg-green-600 transition-colors shadow-sm">Set ${nextStatus.charAt(0).toUpperCase() + nextStatus.slice(1)}</button>`;
+            }
+            else if (task.status === 'completed') {
+                delBtn.classList.remove('hidden');
+            }
+        }
+
+        async function updateTaskStatusWithComment(id, status) {
+            const comment = document.getElementById('statusComment').value;
+            await updateTaskStatus(id, status, comment);
+        }
+
+        async function updateTaskStatus(id, status, comment = null) {
+            const payload = { status };
+            if (comment) payload.comment = comment;
+
+            const res = await fetchWrapper(`/tasks/${id}/status`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if (res.success) {
+                showToast(`Task moved to ${status}`, 'success');
+                loadTasks();
+            } else {
+                showToast(res.error, 'error');
+            }
+        }
+
+        async function deleteCurrentTask() {
+            if (!selectedTaskId) return;
+            const res = await fetchWrapper(`/tasks/${selectedTaskId}`, { method: 'DELETE' });
+            if (res.success) {
+                showToast('Task moved to trash', 'info');
+                resetView();
+                loadTasks();
+            } else {
+                showToast(res.error, 'error');
+            }
+        }
+
+        async function handleFileUpload() {
+            const input = document.getElementById('fileUpload');
+            if (!input.files.length || !selectedTaskId) return;
+
+            const formData = new FormData();
+            formData.append('file', input.files[0]);
+            showToast('Uploading file...', 'info');
+
+            const res = await fetchWrapper(`/tasks/${selectedTaskId}/upload`, { method: 'POST', body: formData });
+            if (res.success) {
+                showToast('File attached', 'success');
+                input.value = '';
+                loadTasks();
+            } else {
+                showToast(res.error, 'error');
+            }
+        }
+
+        updateAuthUI();
+    </script>
+</body>
+</html>
