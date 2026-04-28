@@ -9,3 +9,4 @@ pyjwt
 argon2-cffi
 pypdf2
 python-multipart
+alembic

@@ -29,6 +29,9 @@ class SqlAlchemyTaskRepository:
             title=task.title,
             description=task.description,
             status=task.status,
+            task_type=task.task_type,
+            company_name=task.company_name,
+            amount=task.amount,
             file_path=task.file_path,
             comment=task.comment,
             user_id=task.user_id,
@@ -46,7 +49,8 @@ class SqlAlchemyTaskRepository:
         if db_task:
             return TaskDomain(
                 id=db_task.id, title=db_task.title, description=db_task.description,
-                status=db_task.status, file_path=db_task.file_path, comment=db_task.comment,
+                status=db_task.status, task_type=db_task.task_type, company_name=db_task.company_name,
+                amount=db_task.amount, file_path=db_task.file_path, comment=db_task.comment,
                 user_id=db_task.user_id, is_deleted=db_task.is_deleted
             )
         return None
@@ -66,7 +70,8 @@ class SqlAlchemyTaskRepository:
         return [
             TaskDomain(
                 id=t.id, title=t.title, description=t.description,
-                status=t.status, file_path=t.file_path, comment=t.comment,
+                status=t.status, task_type=t.task_type, company_name=t.company_name,
+                amount=t.amount, file_path=t.file_path, comment=t.comment,
                 user_id=t.user_id, is_deleted=t.is_deleted
             ) for t in result.scalars()
         ]
@@ -76,6 +81,9 @@ class SqlAlchemyTaskRepository:
             title=task.title,
             description=task.description,
             status=task.status,
+            task_type=task.task_type,
+            company_name=task.company_name,
+            amount=task.amount,
             file_path=task.file_path,
             comment=task.comment,
             is_deleted=task.is_deleted

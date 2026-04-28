@@ -1,6 +1,6 @@
 from typing import List, Optional
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy import String, ForeignKey, Boolean
+from sqlalchemy import String, ForeignKey, Boolean, Float
 from src.core.database import Base
 
 class ClientModel(Base):
@@ -27,6 +27,9 @@ class TaskModel(Base):
     title: Mapped[str] = mapped_column(String(255))
     description: Mapped[Optional[str]] = mapped_column(String(1000), nullable=True)
     status: Mapped[str] = mapped_column(String(50), default="new")
+    task_type: Mapped[str] = mapped_column(String(50), default="sale")
+    company_name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    amount: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     file_path: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
     comment: Mapped[Optional[str]] = mapped_column(String(1000), nullable=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))

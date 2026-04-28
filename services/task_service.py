@@ -12,7 +12,14 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 async def create_task(task_data: TaskCreate, user_id: int, uow: UnitOfWork) -> TaskResponse:
     async with uow:
-        new_task = Task(title=task_data.title, description=task_data.description, user_id=user_id)
+        new_task = Task(
+            title=task_data.title, 
+            description=task_data.description, 
+            task_type=task_data.task_type,
+            company_name=task_data.company_name,
+            amount=task_data.amount,
+            user_id=user_id
+        )
         added_task = await uow.tasks.add(new_task)
         await uow.commit()
         return TaskResponse.model_validate(added_task)
@@ -43,6 +50,17 @@ async def delete_task(task_id: int, user_id: int, uow: UnitOfWork) -> bool:
             return False
             
         task.is_deleted = True
+        await uow.tasks.update(task)
+        await uow.commit()
+        return True
+
+async def restore_task(task_id: int, user_id: int, uow: UnitOfWork) -> bool:
+    async with uow:
+        task = await uow.tasks.get(task_id)
+        if not task or task.user_id != user_id or not task.is_deleted:
+            return False
+            
+        task.is_deleted = False
         await uow.tasks.update(task)
         await uow.commit()
         return True

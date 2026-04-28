@@ -51,6 +51,16 @@ async def update_task_status(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found or deleted")
     return task
 
+@router.patch("/{task_id}/restore", status_code=status.HTTP_204_NO_CONTENT)
+async def restore_task(
+    task_id: int,
+    current_user: User = Depends(get_current_user),
+    uow: UnitOfWork = Depends(get_uow)
+):
+    restored = await task_service.restore_task(task_id, current_user.id, uow)
+    if not restored:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found or not in trash")
+
 @router.delete("/{task_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_task(
     task_id: int,
