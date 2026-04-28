@@ -1,4 +1,6 @@
 import asyncio
+import sys
+import os
 from logging.config import fileConfig
 
 from sqlalchemy import pool
@@ -7,8 +9,18 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from alembic import context
 
-from src.core.database import Base
-import infrastructure.orm
+sys.path.insert(0, os.path.realpath(os.path.join(os.path.dirname(__file__), '..')))
+
+from core.database import Base
+from domain.task import Task
+from domain.user import User
+from infrastructure.orm import TaskModel, UserModel, ClientModel
+
+_ = Task
+_ = User
+_ = TaskModel
+_ = UserModel
+_ = ClientModel
 
 config = context.config
 

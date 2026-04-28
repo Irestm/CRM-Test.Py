@@ -3,199 +3,128 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CRM Dashboard</title>
+    <title>CRM Dashboard | TECSA Edition</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = { darkMode: 'class' }
     </script>
     <style>
-        .toast-enter { transform: translateX(100%); opacity: 0; }
-        .toast-enter-active { transform: translateX(0); opacity: 1; transition: all 300ms ease-out; }
-        .toast-exit { transform: translateX(0); opacity: 1; }
-        .toast-exit-active { transform: translateX(100%); opacity: 0; transition: all 300ms ease-in; }
-        .tab-active { border-bottom: 2px solid #000; color: #000; font-weight: 600; }
-        .dark .tab-active { border-bottom: 2px solid #fff; color: #fff; }
+        .light body { background-color: #ffffff !important; color: #000000 !important; }
 
-        .status-new { background-color: #e0f2fe; color: #075985; }
-        .status-active { background-color: #fef08a; color: #854d0e; }
-        .status-processing { background-color: #fed7aa; color: #9a3412; }
-        .status-completed { background-color: #dcfce7; color: #166534; }
+        .status-new { border-top: 6px solid #3b82f6; }
+        .status-active { border-top: 6px solid #eab308; }
+        .status-processing { border-top: 6px solid #f97316; }
+        .status-completed { border-top: 6px solid #22c55e; }
 
-        .dark .status-new { background-color: #0c4a6e; color: #bae6fd; }
-        .dark .status-active { background-color: #713f12; color: #fef08a; }
-        .dark .status-processing { background-color: #7c2d12; color: #fed7aa; }
-        .dark .status-completed { background-color: #14532d; color: #dcfce7; }
+        .sheet-transition { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .tab-active { border-bottom: 2px solid currentColor; font-weight: 800; }
+
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
+        .dark ::-webkit-scrollbar-thumb { background: #4b5563; }
     </style>
 </head>
-<body class="bg-white dark:bg-gray-900 text-black dark:text-gray-100 font-sans h-screen flex flex-col overflow-hidden transition-colors duration-200">
+<body class="bg-white dark:bg-gray-900 text-black dark:text-gray-100 font-sans min-h-screen flex flex-col transition-colors duration-200 overflow-x-hidden">
 
-    <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
+    <div id="toast-container" class="fixed top-4 right-4 z-[100] flex flex-col gap-2 pointer-events-none"></div>
+    <div id="overlay" class="fixed inset-0 bg-black/40 hidden z-40 backdrop-blur-sm transition-opacity" onclick="closeSheet()"></div>
 
-    <header class="flex justify-between items-center p-4 bg-white dark:bg-gray-800 shadow-sm z-10 shrink-0 transition-colors duration-200 border-b dark:border-gray-700">
-        <div class="flex items-center gap-2 cursor-pointer" onclick="resetView()">
-            <svg class="w-8 h-8 text-black dark:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-            </svg>
-            <span class="text-xl font-bold">CRM<span class="font-light">Pro</span></span>
+    <header class="flex justify-between items-center p-4 bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-30 transition-colors">
+        <div class="flex items-center gap-3 cursor-pointer" onclick="location.reload()">
+            <div class="bg-black dark:bg-white p-2 rounded-xl">
+                <svg class="w-6 h-6 text-white dark:text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+            </div>
+            <span class="text-2xl font-black tracking-tighter">TECSA<span class="font-light text-gray-400">CRM</span></span>
         </div>
 
-        <div id="topTabs" class="flex-1 flex justify-center hidden sm:flex gap-6">
-            <button onclick="setFilter(null, this)" class="tab-active pb-1 text-sm text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white transition-colors">All</button>
-            <button onclick="setFilter('new', this)" class="pb-1 text-sm text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white transition-colors">New</button>
-            <button onclick="setFilter('active', this)" class="pb-1 text-sm text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white transition-colors">Active</button>
-            <button onclick="setFilter('processing', this)" class="pb-1 text-sm text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white transition-colors">Processing</button>
-            <button onclick="setFilter('completed', this)" class="pb-1 text-sm text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white transition-colors">Completed</button>
+        <div id="topTabs" class="hidden md:flex gap-8">
+            <button onclick="setFilter(null, this)" class="tab-active text-xs uppercase tracking-widest py-1">All</button>
+            <button onclick="setFilter('new', this)" class="text-xs text-gray-400 uppercase tracking-widest py-1 hover:text-black dark:hover:text-white transition-colors">New</button>
+            <button onclick="setFilter('active', this)" class="text-xs text-gray-400 uppercase tracking-widest py-1 hover:text-black dark:hover:text-white transition-colors">Active</button>
+            <button onclick="setFilter('processing', this)" class="text-xs text-gray-400 uppercase tracking-widest py-1 hover:text-black dark:hover:text-white transition-colors">Processing</button>
+            <button onclick="setFilter('completed', this)" class="text-xs text-gray-400 uppercase tracking-widest py-1 hover:text-black dark:hover:text-white transition-colors">Completed</button>
         </div>
 
-        <div class="flex items-center gap-4">
-            <button id="authBtn" onclick="toggleAuthModal()" class="text-sm font-medium hover:underline hidden">Login / Register</button>
-            <button id="logoutBtn" onclick="logout()" class="text-sm font-medium text-red-500 hover:text-red-700 hidden">Logout</button>
-
-            <button onclick="toggleTrashModal()" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors relative" title="Trash">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                </svg>
+        <div class="flex items-center gap-2">
+            <button onclick="toggleTrashModal()" class="p-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors relative" title="Trash">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
             </button>
-
-            <button onclick="toggleTheme()" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" title="Toggle Theme">
-                <svg class="w-6 h-6 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
-                </svg>
-                <svg class="w-6 h-6 block dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
-                </svg>
+            <button onclick="toggleTheme()" class="p-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                <svg class="w-5 h-5 block dark:hidden" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path></svg>
+                <svg class="w-5 h-5 hidden dark:block text-yellow-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd"></path></svg>
             </button>
-            <button onclick="showNewTaskForm()" class="bg-black dark:bg-white text-white dark:text-black p-2 rounded-full hover:opacity-80 transition-opacity" title="New Task">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+            <button id="logoutBtn" onclick="logout()" class="p-2.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl hidden transition-colors" title="Logout">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
             </button>
         </div>
     </header>
 
-    <div id="authModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden backdrop-blur-sm">
-        <div class="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-2xl w-96 max-w-[90%] transition-colors duration-200">
-            <h2 class="text-2xl font-bold mb-6 text-center">Authentication</h2>
-            <div class="space-y-4 relative">
-                <div>
-                    <input type="email" id="email" placeholder="Email" class="w-full border dark:border-gray-600 dark:bg-gray-700 dark:text-white p-3 rounded-lg outline-none transition-all bg-white dark:bg-gray-700">
-                    <p id="emailError" class="text-red-500 text-xs mt-1 hidden"></p>
-                </div>
-                <div>
-                    <input type="password" id="password" placeholder="Password" class="w-full border dark:border-gray-600 dark:bg-gray-700 dark:text-white p-3 rounded-lg outline-none transition-all bg-white dark:bg-gray-700">
-                    <p id="passwordError" class="text-red-500 text-xs mt-1 hidden"></p>
-                </div>
-                <div id="generalAuthError" class="text-red-500 text-sm text-center hidden"></div>
-                <div class="flex gap-4 pt-2">
-                    <button onclick="register()" class="flex-1 bg-gray-100 dark:bg-gray-700 text-black dark:text-white py-3 rounded-lg font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">Register</button>
-                    <button onclick="login()" class="flex-1 bg-black dark:bg-white text-white dark:text-black py-3 rounded-lg font-medium hover:opacity-80 transition-opacity">Login</button>
-                </div>
-            </div>
-            <button onclick="toggleAuthModal()" class="mt-6 w-full text-sm text-gray-500 hover:text-black dark:hover:text-white">Close</button>
+    <main class="flex-1 p-6 md:p-10 lg:px-16 overflow-y-auto">
+        <div id="welcomeState" class="absolute inset-0 flex flex-col items-center justify-center text-gray-400 -z-10 hidden">
+            <svg class="w-24 h-24 mb-6 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+            <p class="text-2xl font-bold text-black dark:text-white mb-2">No active tasks</p>
+            <p class="text-sm">Click the + button to create a new record.</p>
+        </div>
+
+        <div id="tasks-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
+        </div>
+
+        <button onclick="showNewTaskForm()" class="fixed bottom-8 right-8 w-16 h-16 bg-black dark:bg-white text-white dark:text-black rounded-full shadow-2xl flex items-center justify-center hover:scale-105 transition-transform z-20 focus:outline-none focus:ring-4 focus:ring-gray-300 dark:focus:ring-gray-600">
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path></svg>
+        </button>
+    </main>
+
+    <div id="bottom-sheet" class="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 rounded-t-[2.5rem] shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.3)] transform translate-y-full sheet-transition z-50 h-[85vh] md:h-[80vh] lg:w-[800px] lg:mx-auto lg:rounded-[2.5rem] lg:bottom-4 lg:border dark:border-gray-700 flex flex-col hidden">
+        <div class="w-16 h-1.5 bg-gray-200 dark:bg-gray-600 rounded-full mx-auto mt-4 mb-2 cursor-pointer hover:bg-gray-300 transition-colors" onclick="closeSheet()"></div>
+        <div id="sheet-body" class="flex-1 overflow-y-auto px-6 sm:px-10 pb-10">
         </div>
     </div>
 
-    <div id="trashModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden backdrop-blur-sm">
-        <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-2xl w-[600px] max-w-[90%] max-h-[80vh] flex flex-col transition-colors duration-200">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-2xl font-bold flex items-center gap-2">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                    Trash Bin
+    <div id="authModal" class="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center hidden backdrop-blur-sm">
+        <div class="bg-white dark:bg-gray-800 p-10 rounded-3xl shadow-2xl w-full max-w-md mx-4">
+            <div class="flex justify-center mb-8">
+                 <div class="bg-black dark:bg-white p-3 rounded-2xl">
+                    <svg class="w-8 h-8 text-white dark:text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+                </div>
+            </div>
+            <h2 class="text-2xl font-black mb-8 text-center uppercase tracking-tighter">Login to TECSA</h2>
+            <div class="space-y-5">
+                <div>
+                    <input type="email" id="email" placeholder="Work Email" class="w-full bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-black dark:focus:ring-white transition-all font-medium">
+                    <p id="emailError" class="text-red-500 text-xs mt-2 font-bold hidden px-2"></p>
+                </div>
+                <div>
+                    <input type="password" id="password" placeholder="Password" class="w-full bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-black dark:focus:ring-white transition-all font-medium">
+                    <p id="passwordError" class="text-red-500 text-xs mt-2 font-bold hidden px-2"></p>
+                </div>
+                <div id="generalAuthError" class="text-red-500 text-sm font-bold text-center hidden"></div>
+                <div class="pt-4 space-y-3">
+                    <button onclick="login()" class="w-full bg-black dark:bg-white text-white dark:text-black p-4 rounded-2xl font-bold hover:scale-[1.02] transition-transform">SIGN IN</button>
+                    <button onclick="register()" class="w-full bg-white dark:bg-gray-800 border-2 border-black dark:border-white text-black dark:text-white p-4 rounded-2xl font-bold hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">CREATE ACCOUNT</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="trashModal" class="fixed inset-0 bg-black/60 z-[90] flex items-center justify-center hidden backdrop-blur-sm">
+        <div class="bg-white dark:bg-gray-800 p-8 rounded-3xl shadow-2xl w-full max-w-2xl mx-4 max-h-[85vh] flex flex-col">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-black uppercase tracking-tighter flex items-center gap-3">
+                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                    Trash
                 </h2>
-                <button onclick="toggleTrashModal()" class="hover:opacity-70">
+                <button onclick="toggleTrashModal()" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
             </div>
 
-            <div id="trashList" class="flex-1 overflow-y-auto space-y-2 mb-4 p-2 bg-white dark:bg-gray-900 border dark:border-gray-700 rounded-lg">
+            <div id="trashList" class="flex-1 overflow-y-auto space-y-3 pr-2">
             </div>
 
-            <div class="flex justify-end gap-3 pt-4 border-t dark:border-gray-700">
-                <button onclick="toggleTrashModal()" class="px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">Close</button>
-                <button onclick="emptyTrash()" id="emptyTrashBtn" class="px-4 py-2 bg-red-500 text-white rounded-lg font-medium hover:bg-red-600 transition-colors hidden">Empty Trash</button>
-            </div>
-        </div>
-    </div>
-
-    <div class="flex flex-1 overflow-hidden relative">
-
-        <main id="mainGridArea" class="flex-1 overflow-y-auto p-8 relative transition-colors duration-200 bg-white dark:bg-gray-900">
-            <div id="welcomeState" class="absolute inset-0 flex flex-col items-center justify-center text-gray-400">
-                <svg class="w-24 h-24 mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
-                </svg>
-                <p class="text-xl font-medium text-black dark:text-white">Your workspace is empty</p>
-                <p class="text-sm mt-2">Create a new task to get started.</p>
-            </div>
-
-            <div id="taskGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 hidden">
-            </div>
-        </main>
-
-        <div id="slideOverBackdrop" class="absolute inset-0 bg-black/30 backdrop-blur-sm z-30 hidden transition-opacity" onclick="resetView()"></div>
-
-        <div id="taskDrawer" class="absolute bottom-0 left-0 w-full h-[75vh] md:h-[80vh] bg-white dark:bg-gray-800 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.3)] transform translate-y-full transition-transform duration-300 ease-in-out z-40 flex flex-col rounded-t-3xl border-t dark:border-gray-700">
-
-            <div class="w-16 h-1.5 bg-gray-300 dark:bg-gray-600 rounded-full mx-auto mt-3 mb-1 shrink-0"></div>
-
-            <div id="newTaskForm" class="flex-1 flex flex-col p-8 hidden max-w-2xl mx-auto w-full">
-                <h2 class="text-2xl font-bold mb-6">Create New Task</h2>
-                <input type="text" id="newTaskTitle" placeholder="Task Title" class="w-full border dark:border-gray-600 dark:bg-gray-700 dark:text-white p-4 rounded-lg text-lg mb-4 outline-none bg-white dark:bg-gray-700">
-                <div class="grid grid-cols-2 gap-4 mb-4">
-                    <select id="newTaskType" class="w-full border dark:border-gray-600 dark:bg-gray-700 dark:text-white p-4 rounded-lg outline-none bg-white dark:bg-gray-700">
-                        <option value="sale">Sale</option>
-                        <option value="service">Service</option>
-                    </select>
-                    <input type="number" id="newTaskAmount" placeholder="Amount ($)" class="w-full border dark:border-gray-600 dark:bg-gray-700 dark:text-white p-4 rounded-lg outline-none bg-white dark:bg-gray-700">
-                </div>
-                <input type="text" id="newTaskCompany" placeholder="Company Name (Optional)" class="w-full border dark:border-gray-600 dark:bg-gray-700 dark:text-white p-4 rounded-lg mb-4 outline-none bg-white dark:bg-gray-700">
-                <textarea id="newTaskDesc" placeholder="Description..." class="w-full border dark:border-gray-600 dark:bg-gray-700 dark:text-white p-4 rounded-lg mb-6 flex-1 resize-none outline-none bg-white dark:bg-gray-700"></textarea>
-                <div class="flex gap-4">
-                    <button onclick="submitNewTask()" class="flex-1 bg-black dark:bg-white text-white dark:text-black py-3 rounded-lg font-medium hover:opacity-80 transition-opacity">Create</button>
-                    <button onclick="resetView()" class="flex-1 bg-gray-100 dark:bg-gray-700 text-black dark:text-white py-3 rounded-lg font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">Cancel</button>
-                </div>
-            </div>
-
-            <div id="taskChatView" class="flex-1 flex flex-col hidden h-full max-w-4xl mx-auto w-full relative">
-                <div class="p-6 border-b dark:border-gray-700 flex justify-between items-start shrink-0">
-                    <div>
-                        <div class="flex items-center gap-3 mb-2">
-                            <span id="chatTaskStatus" class="text-xs font-bold px-2.5 py-1 rounded-md uppercase tracking-wide"></span>
-                            <span id="chatTaskType" class="text-xs font-medium px-2.5 py-1 rounded-md bg-gray-100 dark:bg-gray-700"></span>
-                        </div>
-                        <h2 id="chatTaskTitle" class="text-2xl font-bold"></h2>
-                        <div id="chatTaskDetails" class="flex gap-4 mt-2 text-sm text-gray-500 dark:text-gray-400">
-                            <span id="chatTaskCompany" class="hidden flex items-center gap-1"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg> <b></b></span>
-                            <span id="chatTaskAmount" class="hidden flex items-center gap-1"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg> <b></b></span>
-                        </div>
-                    </div>
-                    <div class="flex gap-2">
-                        <button onclick="deleteCurrentTask()" class="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors hidden" title="Move to Trash" id="deleteTaskBtn">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                        </button>
-                        <button onclick="resetView()" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                        </button>
-                    </div>
-                </div>
-
-                <div id="chatMessages" class="flex-1 overflow-y-auto p-6 space-y-6 bg-white dark:bg-gray-800">
-                </div>
-
-                <div class="p-4 shrink-0 hidden bg-white dark:bg-gray-800 border-t dark:border-gray-700" id="chatInputArea">
-                    <div class="flex flex-col gap-3">
-                        <div id="statusActions" class="flex gap-2 flex-wrap mb-1"></div>
-                        <div class="flex items-end gap-2 bg-white dark:bg-gray-800 p-1 rounded-2xl border dark:border-gray-700 shadow-sm">
-                            <input type="file" id="fileUpload" class="hidden" onchange="handleFileUpload()">
-                            <button onclick="document.getElementById('fileUpload').click()" class="p-3 text-gray-500 hover:text-black dark:hover:text-white rounded-full transition-colors shrink-0" title="Attach PDF">
-                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
-                            </button>
-
-                            <div class="flex-1 relative flex items-center">
-                                <input type="text" id="statusComment" placeholder="Add an optional comment..." class="w-full bg-transparent p-3 pr-20 outline-none text-sm">
-                                <div id="inlineActionBtnContainer" class="absolute right-1"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            <div class="mt-6 pt-6 border-t border-gray-100 dark:border-gray-700 flex justify-between items-center">
+                <span id="trashCount" class="text-sm font-bold text-gray-400">0 items</span>
+                <button onclick="emptyTrash()" id="emptyTrashBtn" class="text-sm font-bold text-red-500 hover:text-red-600 uppercase tracking-widest hidden transition-colors">Empty Trash</button>
             </div>
         </div>
     </div>
@@ -204,16 +133,28 @@
         const API_URL = 'http://localhost:8000';
         let token = localStorage.getItem('token');
         let currentTasks = [];
-        let selectedTaskId = null;
         let currentFilter = null;
+        let selectedTaskId = null;
+
+        if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+            document.documentElement.classList.remove('light');
+        }
+
+        function toggleTheme() {
+            const html = document.documentElement;
+            html.classList.toggle('dark');
+            html.classList.toggle('light');
+            localStorage.setItem('theme', html.classList.contains('dark') ? 'dark' : 'light');
+        }
 
         function showToast(message, type = 'error') {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
             const colors = { error: 'bg-red-500 text-white', success: 'bg-green-500 text-white', info: 'bg-black text-white dark:bg-white dark:text-black' };
 
-            toast.className = `toast-enter flex items-center p-4 rounded-lg shadow-lg ${colors[type]} max-w-sm pointer-events-auto`;
-            toast.innerHTML = `<div class="flex-1 text-sm font-medium">${message}</div><button onclick="this.parentElement.remove()" class="ml-4 opacity-80 hover:opacity-100">&times;</button>`;
+            toast.className = `toast-enter flex items-center p-4 rounded-2xl shadow-xl ${colors[type]} max-w-sm pointer-events-auto border border-black/5 dark:border-white/10`;
+            toast.innerHTML = `<div class="flex-1 text-sm font-bold">${message}</div><button onclick="this.parentElement.remove()" class="ml-4 opacity-50 hover:opacity-100"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>`;
             container.appendChild(toast);
 
             requestAnimationFrame(() => {
@@ -227,28 +168,20 @@
                     toast.classList.add('toast-exit-active');
                     setTimeout(() => toast.remove(), 300);
                 });
-            }, 5000);
+            }, 4000);
         }
 
         function clearAuthErrors() {
-            document.getElementById('emailError').classList.add('hidden');
-            document.getElementById('passwordError').classList.add('hidden');
-            document.getElementById('generalAuthError').classList.add('hidden');
-            document.getElementById('email').classList.remove('border-red-500');
-            document.getElementById('password').classList.remove('border-red-500');
+            ['emailError', 'passwordError', 'generalAuthError'].forEach(id => document.getElementById(id).classList.add('hidden'));
+            ['email', 'password'].forEach(id => document.getElementById(id).classList.remove('ring-red-500', 'ring-2'));
         }
 
         function showAuthError(msg, field = 'general') {
-            if (field === 'email') {
-                const el = document.getElementById('emailError');
+            if (field === 'email' || field === 'password') {
+                const el = document.getElementById(`${field}Error`);
                 el.textContent = msg;
                 el.classList.remove('hidden');
-                document.getElementById('email').classList.add('border-red-500');
-            } else if (field === 'password') {
-                const el = document.getElementById('passwordError');
-                el.textContent = msg;
-                el.classList.remove('hidden');
-                document.getElementById('password').classList.add('border-red-500');
+                document.getElementById(field).classList.add('ring-red-500', 'ring-2');
             } else {
                 const el = document.getElementById('generalAuthError');
                 el.textContent = msg;
@@ -268,70 +201,15 @@
                 if (!res.ok) {
                     if (res.status === 401 && endpoint !== '/auth/login') {
                         logout(false);
-                        showToast('Session expired. Please login again.', 'error');
-                        return { success: false, error: 'Unauthorized', status: 401 };
+                        return { success: false, error: 'Session expired', status: 401 };
                     }
-
-                    let errMsg = 'An error occurred';
-                    if (data) {
-                        if (data.message) errMsg = data.message;
-                        else if (data.detail) errMsg = typeof data.detail === 'string' ? data.detail : JSON.stringify(data.detail);
-                    }
-                    return { success: false, error: errMsg, data, status: res.status };
+                    let errMsg = data?.message || data?.detail;
+                    if(typeof errMsg !== 'string') errMsg = JSON.stringify(errMsg);
+                    return { success: false, error: errMsg || 'An error occurred', status: res.status };
                 }
                 return { success: true, data, status: res.status };
             } catch (err) {
-                return { success: false, error: 'Network error. Is the server running?', status: 0 };
-            }
-        }
-
-        function toggleTheme() {
-            const html = document.documentElement;
-            html.classList.toggle('dark');
-            html.classList.toggle('light');
-            localStorage.setItem('theme', html.classList.contains('dark') ? 'dark' : 'light');
-        }
-
-        if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-            document.documentElement.classList.add('dark');
-            document.documentElement.classList.remove('light');
-        }
-
-        function toggleAuthModal() {
-            clearAuthErrors();
-            document.getElementById('authModal').classList.toggle('hidden');
-        }
-
-        async function toggleTrashModal() {
-            const modal = document.getElementById('trashModal');
-            if (modal.classList.contains('hidden')) {
-                const res = await fetchWrapper('/tasks/deleted');
-                if (res.success) {
-                    renderTrashList(res.data);
-                    modal.classList.remove('hidden');
-                } else {
-                    showToast(res.error, 'error');
-                }
-            } else {
-                modal.classList.add('hidden');
-            }
-        }
-
-        function updateAuthUI() {
-            if (token) {
-                document.getElementById('authBtn').classList.add('hidden');
-                document.getElementById('logoutBtn').classList.remove('hidden');
-                document.getElementById('topTabs').classList.remove('hidden');
-                document.getElementById('authModal').classList.add('hidden');
-                loadTasks();
-            } else {
-                document.getElementById('authBtn').classList.remove('hidden');
-                document.getElementById('logoutBtn').classList.add('hidden');
-                document.getElementById('topTabs').classList.add('hidden');
-                resetView();
-                document.getElementById('taskGrid').classList.add('hidden');
-                document.getElementById('welcomeState').classList.remove('hidden');
-                if(document.getElementById('authModal').classList.contains('hidden')) toggleAuthModal();
+                return { success: false, error: 'Network connection failed', status: 0 };
             }
         }
 
@@ -348,10 +226,10 @@
                 body: JSON.stringify({ email, password })
             });
             if (res.success) {
-                showToast('Registration successful! You can now login.', 'success');
-                toggleAuthModal();
+                showToast('Account created! Logging in...', 'success');
+                login();
             } else {
-                showAuthError(res.error);
+                showAuthError(res.error, res.status === 422 ? 'email' : 'general');
             }
         }
 
@@ -370,26 +248,35 @@
             if (res.success) {
                 token = res.data.access_token;
                 localStorage.setItem('token', token);
-                updateAuthUI();
-                showToast('Logged in successfully', 'success');
+                document.getElementById('authModal').classList.add('hidden');
+                document.getElementById('logoutBtn').classList.remove('hidden');
+                document.getElementById('email').value = '';
+                document.getElementById('password').value = '';
+                loadTasks();
             } else {
-                showAuthError(res.error);
+                showAuthError(res.error, res.status === 401 ? 'password' : 'general');
             }
         }
 
         function logout(showMsg = true) {
             token = null;
             localStorage.removeItem('token');
-            currentTasks = [];
-            selectedTaskId = null;
-            updateAuthUI();
-            if(showMsg) showToast('Logged out', 'info');
+            document.getElementById('authModal').classList.remove('hidden');
+            document.getElementById('logoutBtn').classList.add('hidden');
+            document.getElementById('tasks-grid').innerHTML = '';
+            document.getElementById('welcomeState').classList.remove('hidden');
+            closeSheet();
+            if(showMsg) showToast('Logged out successfully', 'info');
         }
 
         function setFilter(status, btnElement) {
             currentFilter = status;
-            document.querySelectorAll('#topTabs button').forEach(b => b.classList.remove('tab-active'));
-            if(btnElement) btnElement.classList.add('tab-active');
+            document.querySelectorAll('#topTabs button').forEach(b => {
+                b.classList.remove('tab-active', 'text-black', 'dark:text-white');
+                b.classList.add('text-gray-400');
+            });
+            btnElement.classList.add('tab-active', 'text-black', 'dark:text-white');
+            btnElement.classList.remove('text-gray-400');
             loadTasks();
         }
 
@@ -402,153 +289,125 @@
             if (res.success) {
                 currentTasks = res.data;
                 renderGrid();
-                if (selectedTaskId) {
-                    const stillExists = currentTasks.find(t => t.id === selectedTaskId);
-                    if (stillExists) renderTaskChat(stillExists);
-                    else resetView();
+                if(selectedTaskId) {
+                    const t = currentTasks.find(x => x.id === selectedTaskId);
+                    if(t) openSheet(t);
+                    else closeSheet();
                 }
-            } else {
-                showToast(res.error, 'error');
             }
         }
 
         function renderGrid() {
-            const grid = document.getElementById('taskGrid');
+            const grid = document.getElementById('tasks-grid');
             const welcome = document.getElementById('welcomeState');
-
             grid.innerHTML = '';
 
             if (currentTasks.length === 0) {
-                grid.classList.add('hidden');
                 welcome.classList.remove('hidden');
-                welcome.innerHTML = currentFilter ? `<p class="text-xl text-gray-500">No tasks in ${currentFilter} status.</p>` : `<svg class="w-24 h-24 mb-4 opacity-30 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg><p class="text-xl font-medium text-black dark:text-white">Your workspace is empty</p><p class="text-sm mt-2 text-gray-500">Create a new task to get started.</p>`;
+                if(currentFilter) {
+                    welcome.innerHTML = `<p class="text-xl font-bold text-gray-500">No tasks in ${currentFilter.toUpperCase()}</p>`;
+                } else {
+                    welcome.innerHTML = `<svg class="w-24 h-24 mb-6 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg><p class="text-2xl font-bold text-black dark:text-white mb-2">Workspace is empty</p><p class="text-sm font-medium">Click the + button to create a new record.</p>`;
+                }
                 return;
             }
 
             welcome.classList.add('hidden');
-            grid.classList.remove('hidden');
 
             currentTasks.forEach(task => {
+                const typeLabel = task.task_type === 'service' ? 'Service' : 'Sale';
+                const typeColor = task.task_type === 'service' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300';
+
                 const card = document.createElement('div');
-                card.className = `status-${task.status} p-5 rounded-2xl cursor-pointer hover:scale-[1.02] transition-transform duration-200 shadow-sm flex flex-col min-h-[180px] border border-transparent dark:border-opacity-20`;
-                card.onclick = () => selectTask(task.id);
-
-                let fileIcon = task.file_path ? `<svg class="w-4 h-4 inline-block ml-1 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>` : '';
-
-                let detailsHtml = '';
-                if (task.company_name || task.amount) {
-                    detailsHtml = '<div class="mt-auto pt-3 flex flex-col gap-1 text-xs opacity-90">';
-                    if (task.company_name) detailsHtml += `<span class="truncate font-medium">🏢 ${task.company_name}</span>`;
-                    if (task.amount) detailsHtml += `<span>💰 $${task.amount.toLocaleString()}</span>`;
-                    detailsHtml += '</div>';
-                }
+                card.className = `status-${task.status} bg-gray-50 dark:bg-gray-800/50 p-6 rounded-[2rem] cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all flex flex-col min-h-[220px] relative overflow-hidden group`;
+                card.onclick = () => openSheet(task);
 
                 card.innerHTML = `
-                    <div class="flex justify-between items-start mb-3">
-                        <div class="flex gap-2 items-center">
-                            <span class="text-xs font-bold uppercase tracking-wider bg-white/20 dark:bg-black/20 px-2 py-0.5 rounded">${task.status}</span>
-                            <span class="text-[10px] uppercase opacity-70 border border-current px-1.5 rounded">${task.task_type}</span>
-                        </div>
-                        ${fileIcon}
+                    <div class="flex justify-between items-start mb-4">
+                        <span class="text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full ${typeColor}">${typeLabel}</span>
+                        ${task.file_path ? `<svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>` : ''}
                     </div>
-                    <h3 class="font-bold text-lg mb-2 line-clamp-2 leading-tight">${task.title}</h3>
-                    ${detailsHtml}
+                    <div class="mb-auto">
+                        <h3 class="text-xl font-black mb-1 leading-snug line-clamp-2">${task.title}</h3>
+                        ${task.company_name ? `<p class="text-xs font-bold text-gray-400 uppercase tracking-tight line-clamp-1 mb-2">${task.company_name}</p>` : ''}
+                    </div>
+                    <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700/50 flex justify-between items-end">
+                        <div class="text-xs font-bold text-gray-400 uppercase tracking-widest">${task.status}</div>
+                        ${task.amount ? `<div class="font-black text-lg text-green-600 dark:text-green-400">${task.amount.toLocaleString('en-US', {style:'currency', currency:'USD'}).replace('.00','')}</div>` : '<div></div>'}
+                    </div>
                 `;
                 grid.appendChild(card);
             });
         }
 
-        function renderTrashList(tasks) {
-            const list = document.getElementById('trashList');
-            const btn = document.getElementById('emptyTrashBtn');
-            list.innerHTML = '';
+        function showNewTaskForm() {
+            selectedTaskId = null;
+            const sheet = document.getElementById('bottom-sheet');
+            const overlay = document.getElementById('overlay');
+            const body = document.getElementById('sheet-body');
 
-            if (tasks.length === 0) {
-                list.innerHTML = '<div class="p-8 text-center text-gray-500">Trash is empty</div>';
-                btn.classList.add('hidden');
-                return;
-            }
+            sheet.classList.remove('hidden');
+            overlay.classList.remove('hidden');
 
-            btn.classList.remove('hidden');
-            tasks.forEach(task => {
-                const el = document.createElement('div');
-                el.className = 'p-3 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 flex justify-between items-center';
-                el.innerHTML = `
-                    <div class="flex-1 truncate pr-4">
-                        <div class="font-medium text-gray-600 dark:text-gray-400 truncate">${task.title}</div>
-                        <div class="text-xs text-gray-400 mt-1">${task.task_type.toUpperCase()} • Deleted</div>
+            body.innerHTML = `
+                <div class="max-w-2xl mx-auto pt-4">
+                    <h2 class="text-3xl font-black mb-8 uppercase tracking-tighter">New Record</h2>
+
+                    <div class="space-y-5">
+                        <div>
+                            <label class="text-xs font-bold text-gray-400 uppercase tracking-widest ml-2 block mb-1">Title *</label>
+                            <input type="text" id="nt-title" class="w-full bg-gray-50 dark:bg-gray-900 border-none p-4 rounded-2xl outline-none focus:ring-2 focus:ring-black dark:focus:ring-white transition-all font-medium text-lg">
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="text-xs font-bold text-gray-400 uppercase tracking-widest ml-2 block mb-1">Type</label>
+                                <select id="nt-type" class="w-full bg-gray-50 dark:bg-gray-900 border-none p-4 rounded-2xl outline-none focus:ring-2 focus:ring-black dark:focus:ring-white transition-all font-bold appearance-none">
+                                    <option value="sale">Sale</option>
+                                    <option value="service">Service</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="text-xs font-bold text-gray-400 uppercase tracking-widest ml-2 block mb-1">Amount ($)</label>
+                                <input type="number" id="nt-amount" step="0.01" class="w-full bg-gray-50 dark:bg-gray-900 border-none p-4 rounded-2xl outline-none focus:ring-2 focus:ring-black dark:focus:ring-white transition-all font-bold">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="text-xs font-bold text-gray-400 uppercase tracking-widest ml-2 block mb-1">Company (Optional)</label>
+                            <input type="text" id="nt-company" class="w-full bg-gray-50 dark:bg-gray-900 border-none p-4 rounded-2xl outline-none focus:ring-2 focus:ring-black dark:focus:ring-white transition-all font-medium">
+                        </div>
+
+                        <div>
+                            <label class="text-xs font-bold text-gray-400 uppercase tracking-widest ml-2 block mb-1">Description</label>
+                            <textarea id="nt-desc" class="w-full bg-gray-50 dark:bg-gray-900 border-none p-4 rounded-2xl outline-none focus:ring-2 focus:ring-black dark:focus:ring-white transition-all font-medium h-32 resize-none"></textarea>
+                        </div>
+
+                        <div class="pt-4 flex gap-3">
+                            <button onclick="submitNewTask()" class="flex-1 bg-black dark:bg-white text-white dark:text-black py-4 rounded-2xl font-bold hover:scale-[1.02] transition-transform">CREATE</button>
+                            <button onclick="closeSheet()" class="px-8 bg-gray-100 dark:bg-gray-700 text-black dark:text-white py-4 rounded-2xl font-bold hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">CANCEL</button>
+                        </div>
                     </div>
-                    <button onclick="restoreTask(${task.id})" class="text-sm bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 px-3 py-1.5 rounded hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors border border-indigo-200 dark:border-indigo-800 shrink-0">Restore</button>
-                `;
-                list.appendChild(el);
-            });
-        }
+                </div>
+            `;
 
-        async function restoreTask(id) {
-            const res = await fetchWrapper(`/tasks/${id}/restore`, { method: 'PATCH' });
-            if (res.success) {
-                showToast('Task restored', 'success');
-                loadTasks();
-                const trashRes = await fetchWrapper('/tasks/deleted');
-                if (trashRes.success) renderTrashList(trashRes.data);
-            } else {
-                showToast(res.error, 'error');
-            }
-        }
-
-        async function emptyTrash() {
-            if(!confirm('Permanently delete all tasks in trash?')) return;
-            const res = await fetchWrapper('/tasks/deleted/empty', { method: 'DELETE' });
-            if (res.success) {
-                showToast('Trash emptied', 'success');
-                toggleTrashModal();
-            } else {
-                showToast(res.error, 'error');
-            }
-        }
-
-        function openDrawer() {
-            document.getElementById('slideOverBackdrop').classList.remove('hidden');
             setTimeout(() => {
-                document.getElementById('taskDrawer').classList.remove('translate-y-full');
+                sheet.classList.remove('translate-y-full');
+                setTimeout(() => document.getElementById('nt-title').focus(), 300);
             }, 10);
         }
 
-        function resetView() {
-            selectedTaskId = null;
-            document.getElementById('taskDrawer').classList.add('translate-y-full');
-            setTimeout(() => {
-                document.getElementById('slideOverBackdrop').classList.add('hidden');
-                document.getElementById('newTaskForm').classList.add('hidden');
-                document.getElementById('taskChatView').classList.add('hidden');
-            }, 300);
-        }
-
-        function showNewTaskForm() {
-            selectedTaskId = null;
-            document.getElementById('taskChatView').classList.add('hidden');
-            document.getElementById('newTaskForm').classList.remove('hidden');
-            document.getElementById('newTaskTitle').value = '';
-            document.getElementById('newTaskDesc').value = '';
-            document.getElementById('newTaskCompany').value = '';
-            document.getElementById('newTaskAmount').value = '';
-            openDrawer();
-            setTimeout(() => document.getElementById('newTaskTitle').focus(), 350);
-        }
-
         async function submitNewTask() {
-            const title = document.getElementById('newTaskTitle').value;
-            const desc = document.getElementById('newTaskDesc').value;
-            const type = document.getElementById('newTaskType').value;
-            const company = document.getElementById('newTaskCompany').value;
-            const amount = document.getElementById('newTaskAmount').value;
-
+            const title = document.getElementById('nt-title').value;
             if (!title) return showToast('Title is required', 'error');
 
-            const payload = { title, task_type: type };
-            if (desc) payload.description = desc;
-            if (company) payload.company_name = company;
-            if (amount) payload.amount = parseFloat(amount);
+            const payload = {
+                title,
+                description: document.getElementById('nt-desc').value || null,
+                task_type: document.getElementById('nt-type').value,
+                company_name: document.getElementById('nt-company').value || null,
+                amount: parseFloat(document.getElementById('nt-amount').value) || null
+            };
 
             const res = await fetchWrapper('/tasks/', {
                 method: 'POST',
@@ -557,122 +416,111 @@
             });
 
             if (res.success) {
-                showToast('Task created', 'success');
-                await loadTasks();
-                selectTask(res.data.id);
+                showToast('Record created', 'success');
+                closeSheet();
+                loadTasks();
             } else {
                 showToast(res.error, 'error');
             }
         }
 
-        function selectTask(id) {
-            selectedTaskId = id;
-            const task = currentTasks.find(t => t.id === id);
-            if (task) renderTaskChat(task);
+        function openSheet(task) {
+            selectedTaskId = task.id;
+            const sheet = document.getElementById('bottom-sheet');
+            const overlay = document.getElementById('overlay');
+            const body = document.getElementById('sheet-body');
+
+            sheet.classList.remove('hidden');
+            overlay.classList.remove('hidden');
+
+            const isSale = task.task_type === 'sale';
+
+            body.innerHTML = `
+                <div class="max-w-3xl mx-auto pt-4 pb-8 h-full flex flex-col">
+                    <div class="flex flex-col md:flex-row justify-between items-start gap-4 mb-8">
+                        <div>
+                            <div class="flex items-center gap-3 mb-2">
+                                <span class="text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full ${isSale ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' : 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300'}">${isSale ? 'Sale' : 'Service'}</span>
+                                <span class="text-xs font-bold text-gray-400 uppercase tracking-widest">Status: ${task.status}</span>
+                            </div>
+                            <h2 class="text-3xl sm:text-4xl font-black tracking-tighter leading-tight">${task.title}</h2>
+                            ${task.company_name ? `<p class="text-sm font-bold text-gray-500 uppercase tracking-tight mt-2 flex items-center gap-1"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg> ${task.company_name}</p>` : ''}
+                        </div>
+                        ${task.amount ? `<div class="text-3xl sm:text-4xl font-black text-green-600 dark:text-green-400 shrink-0">${task.amount.toLocaleString('en-US', {style:'currency', currency:'USD'}).replace('.00','')}</div>` : ''}
+                    </div>
+
+                    <div class="flex-1 overflow-y-auto space-y-6 min-h-[150px]">
+                        ${task.description ? `
+                        <div>
+                            <h4 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 ml-2">Description</h4>
+                            <div class="bg-gray-50 dark:bg-gray-900/50 rounded-3xl p-6 border border-gray-100 dark:border-gray-800">
+                                <p class="font-medium leading-relaxed whitespace-pre-wrap">${task.description}</p>
+                            </div>
+                        </div>` : ''}
+
+                        ${task.comment ? `
+                        <div>
+                            <h4 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 ml-2">Last Comment</h4>
+                            <div class="bg-yellow-50 dark:bg-yellow-900/10 rounded-3xl p-6 border border-yellow-100 dark:border-yellow-900/30">
+                                <p class="font-medium leading-relaxed text-yellow-900 dark:text-yellow-200 whitespace-pre-wrap">${task.comment}</p>
+                            </div>
+                        </div>` : ''}
+
+                        ${task.file_path ? `
+                        <div>
+                            <h4 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 ml-2">Attachments</h4>
+                            <a href="${API_URL}/${task.file_path}" target="_blank" class="inline-flex items-center gap-3 bg-gray-100 dark:bg-gray-800 px-5 py-3 rounded-2xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors font-bold text-sm">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
+                                Document Attached
+                            </a>
+                        </div>` : ''}
+                    </div>
+
+                    <div class="mt-8 pt-6 border-t border-gray-100 dark:border-gray-700 shrink-0">
+                        ${task.status === 'new' ? `
+                            <button onclick="updateStatus(${task.id}, 'active')" class="w-full bg-black dark:bg-white text-white dark:text-black py-4 rounded-2xl font-black hover:scale-[1.01] transition-transform shadow-lg uppercase tracking-widest">Move to Work</button>
+                        ` : task.status === 'active' || task.status === 'processing' ? `
+                            <div class="flex flex-col gap-3">
+                                <textarea id="statusComment" placeholder="Add comment (optional)..." class="w-full bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-black dark:focus:ring-white transition-all resize-none h-20 font-medium"></textarea>
+                                <div class="flex gap-3">
+                                    <input type="file" id="fileUpload" class="hidden" onchange="handleFileUpload(${task.id})">
+                                    <button onclick="document.getElementById('fileUpload').click()" class="px-6 bg-gray-100 dark:bg-gray-700 text-black dark:text-white rounded-2xl hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors" title="Attach Document">
+                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
+                                    </button>
+                                    ${task.status === 'active' ? `
+                                        <button onclick="updateStatus(${task.id}, 'processing', document.getElementById('statusComment').value)" class="flex-1 bg-black dark:bg-white text-white dark:text-black py-4 rounded-2xl font-black hover:scale-[1.01] transition-transform uppercase tracking-widest">Processing</button>
+                                    ` : `
+                                        <button onclick="updateStatus(${task.id}, 'completed', document.getElementById('statusComment').value)" class="flex-1 bg-green-500 text-white py-4 rounded-2xl font-black hover:bg-green-600 hover:scale-[1.01] transition-all shadow-lg uppercase tracking-widest">Mark Done</button>
+                                    `}
+                                </div>
+                            </div>
+                        ` : `
+                            <button onclick="deleteTask(${task.id})" class="w-full bg-red-500 text-white py-4 rounded-2xl font-black hover:bg-red-600 transition-colors uppercase tracking-widest flex items-center justify-center gap-2">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                Move to Trash
+                            </button>
+                        `}
+                    </div>
+                </div>
+            `;
+
+            setTimeout(() => sheet.classList.remove('translate-y-full'), 10);
         }
 
-        function renderTaskChat(task) {
-            document.getElementById('newTaskForm').classList.add('hidden');
-            document.getElementById('taskChatView').classList.remove('hidden');
-            openDrawer();
-
-            document.getElementById('chatTaskTitle').textContent = task.title;
-
-            const statusEl = document.getElementById('chatTaskStatus');
-            statusEl.textContent = task.status;
-            statusEl.className = `text-xs font-bold px-3 py-1 rounded-md uppercase tracking-wide status-${task.status}`;
-
-            document.getElementById('chatTaskType').textContent = task.task_type.toUpperCase();
-
-            const companyEl = document.getElementById('chatTaskCompany');
-            const amountEl = document.getElementById('chatTaskAmount');
-
-            if (task.company_name) {
-                companyEl.classList.remove('hidden');
-                companyEl.querySelector('b').textContent = task.company_name;
-            } else {
-                companyEl.classList.add('hidden');
-            }
-
-            if (task.amount) {
-                amountEl.classList.remove('hidden');
-                amountEl.querySelector('b').textContent = '$' + task.amount.toLocaleString();
-            } else {
-                amountEl.classList.add('hidden');
-            }
-
-            const delBtn = document.getElementById('deleteTaskBtn');
-            const inputArea = document.getElementById('chatInputArea');
-            const inlineActions = document.getElementById('inlineActionBtnContainer');
-            const statusComment = document.getElementById('statusComment');
-
-            statusComment.value = '';
-            delBtn.classList.add('hidden');
-            inputArea.classList.add('hidden');
-            inlineActions.innerHTML = '';
-
-            const msgs = document.getElementById('chatMessages');
-            msgs.innerHTML = '<div class="flex justify-center"><span class="bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 text-xs px-3 py-1 rounded-full">Task created</span></div>';
-
-            if (task.description) {
-                msgs.innerHTML += `
-                    <div class="flex items-start gap-3 mt-4">
-                        <div class="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center shrink-0">
-                            <svg class="w-4 h-4 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"></path></svg>
-                        </div>
-                        <div class="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-2xl rounded-tl-sm border dark:border-gray-700 max-w-[85%]">
-                            <p class="font-medium mb-1 text-sm">Description</p>
-                            <p class="text-gray-700 dark:text-gray-300 whitespace-pre-wrap text-sm">${task.description}</p>
-                        </div>
-                    </div>`;
-            }
-
-            if (task.comment) {
-                msgs.innerHTML += `
-                    <div class="flex items-start gap-3 mt-4 flex-row-reverse">
-                        <div class="w-8 h-8 rounded-full bg-black dark:bg-white flex items-center justify-center shrink-0">
-                            <svg class="w-4 h-4 text-white dark:text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg>
-                        </div>
-                        <div class="bg-gray-100 dark:bg-gray-700 text-black dark:text-white p-4 rounded-2xl rounded-tr-sm max-w-[85%]">
-                            <p class="font-medium text-sm mb-1 opacity-70">Comment</p>
-                            <p class="text-sm whitespace-pre-wrap">${task.comment}</p>
-                        </div>
-                    </div>`;
-            }
-
-            if (task.file_path) {
-                const fileName = task.file_path.split('/').pop();
-                const fileUrl = `${API_URL}/${task.file_path}`;
-                msgs.innerHTML += `
-                    <div class="flex justify-center my-4"><a href="${fileUrl}" target="_blank" class="bg-gray-100 dark:bg-gray-800 text-black dark:text-white border dark:border-gray-700 text-xs px-3 py-1.5 rounded-full flex items-center gap-1 hover:bg-gray-200 transition-colors shadow-sm"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg> File: ${fileName}</a></div>`;
-            }
-
-            msgs.scrollTop = msgs.scrollHeight;
-
-            if (task.status === 'new') {
-                inputArea.classList.remove('hidden');
-                statusComment.disabled = true;
-                statusComment.placeholder = 'Take task to proceed...';
-                inlineActions.innerHTML = `<button onclick="updateTaskStatus(${task.id}, 'active')" class="bg-black dark:bg-white text-white dark:text-black px-4 py-1.5 rounded-full text-sm font-medium hover:opacity-80 transition-opacity">Take to Work</button>`;
-            }
-            else if (task.status === 'active' || task.status === 'processing') {
-                inputArea.classList.remove('hidden');
-                statusComment.disabled = false;
-                statusComment.placeholder = 'Add a comment (optional)...';
-                const nextStatus = task.status === 'active' ? 'processing' : 'completed';
-                inlineActions.innerHTML = `<button onclick="updateTaskStatusWithComment(${task.id}, '${nextStatus}')" class="bg-black dark:bg-white text-white dark:text-black px-4 py-1.5 rounded-full text-sm font-medium hover:opacity-80 transition-opacity">Set ${nextStatus.charAt(0).toUpperCase() + nextStatus.slice(1)}</button>`;
-            }
-            else if (task.status === 'completed') {
-                delBtn.classList.remove('hidden');
-            }
+        function closeSheet() {
+            const sheet = document.getElementById('bottom-sheet');
+            const overlay = document.getElementById('overlay');
+            sheet.classList.add('translate-y-full');
+            overlay.classList.add('opacity-0');
+            selectedTaskId = null;
+            setTimeout(() => {
+                sheet.classList.add('hidden');
+                overlay.classList.add('hidden');
+                overlay.classList.remove('opacity-0');
+            }, 300);
         }
 
-        async function updateTaskStatusWithComment(id, status) {
-            const comment = document.getElementById('statusComment').value;
-            await updateTaskStatus(id, status, comment);
-        }
-
-        async function updateTaskStatus(id, status, comment = null) {
+        async function updateStatus(id, status, comment = null) {
             const payload = { status };
             if (comment) payload.comment = comment;
 
@@ -681,47 +529,109 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
+
             if (res.success) {
-                showToast(`Task moved to ${status}`, 'success');
+                showToast(`Moved to ${status}`, 'success');
                 await loadTasks();
-                selectTask(id);
+                const updated = currentTasks.find(t => t.id === id);
+                if(updated) openSheet(updated);
+                else closeSheet();
             } else {
                 showToast(res.error, 'error');
             }
         }
 
-        async function deleteCurrentTask() {
-            if (!selectedTaskId) return;
-            const res = await fetchWrapper(`/tasks/${selectedTaskId}`, { method: 'DELETE' });
+        async function deleteTask(id) {
+            const res = await fetchWrapper(`/tasks/${id}`, { method: 'DELETE' });
             if (res.success) {
-                showToast('Task moved to trash', 'info');
-                resetView();
+                showToast('Moved to trash', 'info');
+                closeSheet();
                 loadTasks();
-            } else {
-                showToast(res.error, 'error');
-            }
+            } else showToast(res.error, 'error');
         }
 
-        async function handleFileUpload() {
+        async function handleFileUpload(taskId) {
             const input = document.getElementById('fileUpload');
-            if (!input.files.length || !selectedTaskId) return;
+            if (!input.files.length) return;
 
             const formData = new FormData();
             formData.append('file', input.files[0]);
-            showToast('Uploading file...', 'info');
+            showToast('Uploading...', 'info');
 
-            const res = await fetchWrapper(`/tasks/${selectedTaskId}/upload`, { method: 'POST', body: formData });
+            const res = await fetchWrapper(`/tasks/${taskId}/upload`, { method: 'POST', body: formData });
             if (res.success) {
                 showToast('File attached', 'success');
-                input.value = '';
                 await loadTasks();
-                selectTask(selectedTaskId);
+                openSheet(currentTasks.find(t => t.id === taskId));
+            } else showToast(res.error, 'error');
+        }
+
+        async function toggleTrashModal() {
+            const modal = document.getElementById('trashModal');
+            if (modal.classList.contains('hidden')) {
+                const res = await fetchWrapper('/tasks/deleted');
+                if (res.success) {
+                    renderTrashList(res.data);
+                    modal.classList.remove('hidden');
+                } else showToast(res.error, 'error');
             } else {
-                showToast(res.error, 'error');
+                modal.classList.add('hidden');
             }
         }
 
-        updateAuthUI();
+        function renderTrashList(tasks) {
+            const list = document.getElementById('trashList');
+            const btn = document.getElementById('emptyTrashBtn');
+            const count = document.getElementById('trashCount');
+            list.innerHTML = '';
+            count.textContent = `${tasks.length} items`;
+
+            if (tasks.length === 0) {
+                list.innerHTML = '<div class="p-10 text-center text-gray-400 font-bold">Trash is empty</div>';
+                btn.classList.add('hidden');
+                return;
+            }
+
+            btn.classList.remove('hidden');
+            tasks.forEach(task => {
+                const el = document.createElement('div');
+                el.className = 'p-4 bg-gray-50 dark:bg-gray-800/50 rounded-2xl flex justify-between items-center group';
+                el.innerHTML = `
+                    <div class="overflow-hidden mr-4">
+                        <div class="font-bold line-through opacity-50 truncate">${task.title}</div>
+                        <div class="text-xs font-bold text-gray-400 uppercase mt-1">${task.task_type}</div>
+                    </div>
+                    <button onclick="restoreTask(${task.id})" class="shrink-0 bg-black dark:bg-white text-white dark:text-black px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest hover:scale-105 transition-transform">Restore</button>
+                `;
+                list.appendChild(el);
+            });
+        }
+
+        async function emptyTrash() {
+            if(!confirm('Permanently delete all items?')) return;
+            const res = await fetchWrapper('/tasks/deleted/empty', { method: 'DELETE' });
+            if (res.success) {
+                showToast('Trash emptied', 'success');
+                document.getElementById('trashModal').classList.add('hidden');
+            } else showToast(res.error, 'error');
+        }
+
+        async function restoreTask(id) {
+            const res = await fetchWrapper(`/tasks/${id}/restore`, { method: 'PATCH' });
+            if (res.success) {
+                showToast('Task restored', 'success');
+                const listRes = await fetchWrapper('/tasks/deleted');
+                if (listRes.success) renderTrashList(listRes.data);
+                loadTasks();
+            } else showToast(res.error, 'error');
+        }
+
+        if(!token) {
+            document.getElementById('authModal').classList.remove('hidden');
+        } else {
+            document.getElementById('logoutBtn').classList.remove('hidden');
+            loadTasks();
+        }
     </script>
 </body>
 </html>

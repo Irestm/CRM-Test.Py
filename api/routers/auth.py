@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from schemas.auth import UserCreate, UserResponse, Token
 from services import auth_service
 from infrastructure.uow import UnitOfWork
-from src.api.dependencies import get_uow
+from api.dependencies import get_uow
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 

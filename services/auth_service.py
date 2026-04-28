@@ -1,7 +1,7 @@
 from schemas.auth import UserCreate, UserResponse, Token
 from infrastructure.uow import UnitOfWork
 from domain.user import User
-from src.core.security import hash_password, verify_password, create_access_token
+from core.security import hash_password, verify_password, create_access_token
 
 async def register_user(user_data: UserCreate, uow: UnitOfWork) -> UserResponse:
     async with uow:

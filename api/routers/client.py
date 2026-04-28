@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from schemas.client import ClientCreate, ClientResponse
 from services import client_service
 from infrastructure.uow import UnitOfWork
-from api.dependencies import get_uow
+from src.api.dependencies import get_uow
 
 router = APIRouter(prefix="/clients", tags=["Clients"])
 

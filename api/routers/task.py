@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from schemas.task import TaskCreate, TaskResponse, TaskUpdateStatus
 from services import task_service
 from infrastructure.uow import UnitOfWork
-from src.api.dependencies import get_uow
+from api.dependencies import get_uow
 from api.dependencies_auth import get_current_user
 from domain.user import User
 
@@ -51,7 +51,7 @@ async def update_task_status(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found or deleted")
     return task
 
-@router.patch("/{task_id}/restore", status_code=status.HTTP_204_NO_CONTENT)
+@router.patch("/{task_id}/restore", response_model=TaskResponse)
 async def restore_task(
     task_id: int,
     current_user: User = Depends(get_current_user),
@@ -60,6 +60,10 @@ async def restore_task(
     restored = await task_service.restore_task(task_id, current_user.id, uow)
     if not restored:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found or not in trash")
+        
+    async with uow:
+        task = await uow.tasks.get(task_id)
+        return TaskResponse.model_validate(task)
 
 @router.delete("/{task_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_task(
